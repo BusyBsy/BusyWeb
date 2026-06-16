@@ -4,25 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OCI Backup Storage Calculator</title>
-
- <!-- CSS STYLE -->
-  <!-- use offline CSS -->
-  <!-- <link rel="stylesheet" href="../Style&CSS/style.css"> -->
-  <!-- use online CSS by jsdelivr(URL) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/BusyBsy/Style-CSS@main/style.css">
-
- <!-- JS(EXCEL) SCRIPT -->
-  <!-- แนะนำให้ใส่ defer เพื่อให้เบราว์เซอร์ดาวน์โหลดสคริปต์ขนานไปกับการอ่านหน้าเว็บ ทำให้อ่านหน้าเว็บเสร็จไวขึ้น -->
-  <!-- use offline JS -->
-    <!-- <script src="xlsx-style.js" defer></script> -->
-  <!-- use online JS by https://raw.githack.com/ -->
-    <!-- <script src="https://rawcdn.githack.com/BusyBsy/myJS/refs/heads/main/xlsx-style.js" defer></script> -->
-  <!-- use online JS by jsdelivr(URL) -->
-    <script src="https://cdn.jsdelivr.net/gh/BusyBsy/myJS@main/xlsx-style.js" defer></script>
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/BusyBsy/Style-CSS@main/style.css">
+<script src="https://cdn.jsdelivr.net/gh/BusyBsy/myJS@main/xlsx-style.js" defer></script>
 </head>
 <body>
-
 <div class="header">
   <div class="hlogo">☁️</div>
   <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -31,7 +16,6 @@
       <div class="hbadge" style="margin-left:0;">v2.2</div>
     </div>
   <div class="hsub">Oracle Cloud Infrastructure / AIS Cloud | Object Storage Backup Sizing</div>
-
 </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
     <button class="hbtn save" id="save-btn" onclick="saveToFile()" title="Save all values ​​directly to this HTML file (self-save).">
@@ -46,11 +30,8 @@
     <button class="hbtn" onclick="toggleImportMenu(event)" id="import-btn" title="Load previously saved configuration">
       📂 Import
     </button>
-
   </div>
 </div>
-
-<!-- Save confirm modal -->
 <div class="confirm-overlay" id="save-confirm" onclick="closeSaveConfirm(event)">
   <div class="confirm-box" onclick="event.stopPropagation()">
     <div class="confirm-icon">💾</div>
@@ -66,8 +47,6 @@
     </div>
   </div>
 </div>
-
-<!-- Import modal -->
 <div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-title">📂 Import Configuration</div>
@@ -81,7 +60,6 @@
     </div>
   </div>
 </div>
-
 <div class="tabs">
   <div class="tab active"   onclick="gotoTab('ref',this)">📋 Reference Notes</div>
   <div class="tab"          onclick="gotoTab('compute',this)">🖥️ Compute Backup</div>
@@ -89,8 +67,6 @@
   <div class="tab"          onclick="gotoTab('growth',this)">📈 Monthly Growth</div>
   <div class="tab"          onclick="gotoTab('appdx',this)">📋 Appendix</div>
 </div>
-
-<!-- ======== REFERENCE ======== -->
 <div id="pg-ref" class="page active">
   <div class="steps">
     <div class="step"><div class="snum">1</div><div class="stitle">Input Workloads</div><div class="sdesc">ไปที่แท็บ <b>[🖥️ Compute Backup]</b> และ <b>[🗄️ Database Backup]</b> ใส่ Full Backup Size (GB), Compression %, Daily Change %, Annual Growth %, และ Retention ในแต่ละ Workload</div><div class="snote">⚠️ [Yellow Box] = User Input</div></div>
@@ -153,12 +129,8 @@
     <div class="sec-hd">📝 Other Notes — OCI Database Backup Services</div>
     <div class="sec-bd">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-
-        <!-- LEFT: Open-Source DB Services -->
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">OPEN-SOURCE DATABASE SERVICES</div>
-
-          <!-- OCI DB with PostgreSQL -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-weight:700;color:var(--fg);">OCI Database with PostgreSQL</span>
@@ -175,8 +147,6 @@
               </tr>
             </table>
           </div>
-
-          <!-- MySQL HeatWave -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-weight:700;color:var(--fg);">MySQL HeatWave Service</span>
@@ -194,12 +164,8 @@
             </table>
           </div>
         </div>
-
-        <!-- RIGHT: Oracle Database Services -->
         <div>
           <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">ORACLE DATABASE SERVICES</div>
-
-          <!-- ADB -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-weight:700;color:var(--fg);">Oracle Autonomous Database (ADB)</span>
@@ -216,8 +182,6 @@
               </tr>
             </table>
           </div>
-
-          <!-- BDS -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-weight:700;color:var(--fg);">Oracle Base Database Service (BDS)</span>
@@ -234,8 +198,6 @@
               </tr>
             </table>
           </div>
-
-          <!-- Exadata -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
               <span style="font-weight:700;color:var(--fg);">Oracle Exadata Database Service</span>
@@ -255,7 +217,6 @@
         </div>
       </div>
 	  <div style="display:grid;grid-template-columns:1fr ;place-content:center;gap:16px;">
-		<!-- Recommended Values -->
           <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
             <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">RECOMMENDED VALUES FOR PROPOSAL TOOL</div>
             <div style="font-weight:600;color:var(--fg);margin-bottom:10px;">Default Compress Ratio to use per service (conservative / safe for sizing)</div>
@@ -281,8 +242,6 @@
     </div>
   </div>
 </div>
-
-<!-- ======== COMPUTE BACKUP ======== -->
 <div id="pg-compute" class="page">
   <div class="info-box">
     <div class="ihead">🖥️ OCI Compute Instance Backup — Workload Input</div>
@@ -293,8 +252,6 @@
   <div id="compute-container"></div>
   <button class="add-btn" onclick="addWG('compute')" style="width:100%;justify-content:center;margin-bottom:16px;">➕ Add Compute Workload Group</button>
 </div>
-
-<!-- ======== DATABASE BACKUP ======== -->
 <div id="pg-database" class="page">
   <div class="info-box">
     <div class="ihead">🗄️ Database Backup — Workload Input</div>
@@ -305,10 +262,7 @@
   <div id="db-container"></div>
   <button class="add-btn" onclick="addWG('db')" style="width:100%;justify-content:center;margin-bottom:16px;">➕ Add Database Workload Group</button>
 </div>
-
-<!-- ======== MONTHLY GROWTH ======== -->
 <div id="pg-growth" class="page">
-  <!-- Pricing -->
   <div class="sec">
     <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
       <span class="toggle-icon" style="font-size: 17px;">⚙️</span> Global Pricing & Currency
@@ -332,18 +286,12 @@
       </div>
     </div>
   </div>
-
-  <!-- Summary of linked workloads -->
   <div class="sec">
     <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
       <span class="toggle-icon" style="font-size: 17px;">🔗</span> Auto-Linked Workloads (from Compute & Database tabs)
     </div>
     <div class="sec-bd"><div id="g-summary"></div></div>
   </div>
-
-
-
-  <!-- Charts -->
   <div class="chart-box">
     <div class="chart-title" onclick="toggleSection(this)" style="cursor: pointer; user-select: none; color: cadetblue;">
       <span class="toggle-icon" style="font-size: 18px;">📈</span>&nbsp;Monthly Storage Forecast (GB) — Standard vs Archive Tier (60 months)
@@ -356,8 +304,6 @@
     </div>
     <canvas id="chart-cost"></canvas>
   </div>
-
-  <!-- Forecast Table 12-month -->
   <div class="sec">
     <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
       <span class="toggle-icon" style="font-size: 18px;">📅</span>12-Month Backup Storage Forecast (Retention Ramp-up)
@@ -366,8 +312,6 @@
       <div class="fc-wrap" id="fc-12"></div>
     </div>
   </div>
-
-  <!-- Forecast Table 60-month -->
   <div class="sec">
     <div class="sec-hd collapsed" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
       <span class="toggle-icon" style="font-size: 18px;">📅</span>Extended Forecast — 60-Month Backup Storage
@@ -376,38 +320,24 @@
       <div class="fc-wrap" id="fc-60"></div>
     </div>
   </div>
-
-  <!-- KPIs -->
   <div class="sec">
     <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
       <span class="toggle-icon" style="font-size: 17px;">💡</span> Key Planning KPIs ( Month 12 | Month 36 | Month 60 )
     </div>
     <div class="sec-bd"><div class="kpi-grid" id="g-kpis"></div></div>
   </div>
-
-  <!-- Optimization Indicators -->
   <div class="sec">
     <div class="sec-hd">🎯 Storage Optimization Indicators (Month 1–12)</div>
     <div class="sec-bd"><div id="g-opt"></div></div>
   </div>
-
   <div class="warn-box">⚠️ OCI Archive Storage: (1) Minimum 90-day storage commitment — early deletion charged for full 90 days. (2) Archive retrieval requires restore job (not instant). (3) Set Archive threshold ≥ 3 months in assumptions above.</div>
 </div>
-
-<!-- ======== APPENDIX ======== -->
 <div id="pg-appdx" class="page" style="text-align:center;" >
   <span style="font-size:11px;color:var(--muted);">📎 Appendix Notes</span>
-
-
 </div>
-
 <footer>--This tool is provided for sizing storage & budgetary estimation purposes only--<br>OCI / AIS Cloud | Backup Storage Calculator v2.2(Trial version) </footer>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-// ============================================================
-// DATA MODEL
-// ============================================================
 var STATE = {
   currency: 'USD',
   compute: [
@@ -436,103 +366,44 @@ var STATE = {
     ]}
   ]
 };
-
-// ============================================================
-// FORMULAS (exact Excel logic)
-// ============================================================
 function compRatio(cp){ return (cp>=1||cp<0)?1:(1/(1-cp)); }
-
 function effectiveFull(rows){
-  // SUMPRODUCT: effectiveSize per row = rawGB / compRatio / dedup
   return rows.reduce(function(s,r){ return s + (r.size||0)/compRatio(r.compPct||0)/(r.dedup||1); },0);
 }
-
 function weightedAvgDaily(rows){
   var tot=rows.reduce(function(s,r){return s+(r.size||0);},0);
   if(!tot) return 0;
   return rows.reduce(function(s,r){return s+(r.size||0)*(r.daily||0);},0)/tot;
 }
-
-// Representative retention = from the first row that has size>0, else first row
 function wgRetention(wg){
   var r=wg.rows.find(function(x){return (x.size||0)>0;})||wg.rows[0];
   var _aa=r.archiveAfter; return {dailyRet:r.dailyRet||0,weeklyRet:r.weeklyRet||0,monthlyRet:r.monthlyRet||0,yearlyRet:r.yearlyRet||0,archiveAfter:(_aa!=null&&!isNaN(_aa))?Math.max(0,_aa):1};
 }
-
-// grownFull at month M for a WG (continuous monthly compounding from annual growth)
 function grownFullAt(wg, m){
   var fullGB = effectiveFull(wg.rows);
   var ag = wg.annualGrowth || 0;
   return fullGB * Math.pow(1 + ag, (m - 1) / 12);
 }
-
-// Calculate storage for one WG at month M
-// monthlyAccum = sum of last monthlyRet months' full backup sizes (strict age < monthlyRet)
-// yearlyAccum  = sliding window sum of last yearlyRet year-end snapshots
-// peakType     = 'none'|'first'|'adding'|'replacing' — type of most-recent year-end event
-// mslye        = months since last year-end (0 = on year-end month)
-// aa (archiveAfter) drives how long new standard window stays open after year-end
-//
-// Standard Tier formula (matched exactly to Excel):
-//   Before 1st year-end:   std_extra = min(m, aa) × gf  (ramp-up)
-//   After 1st year-end ever (peakType='first'):
-//       mslye < aa  →  (aa + 1 - mslye) × gf  (step-down, skips 1)
-//       mslye >= aa →  0
-//   After adding new yearly without replacing (peakType='adding'):
-//       mslye <= 1  →  gf  (2-month window only)
-//       mslye > 1   →  0
-//   After replacing oldest yearly (peakType='replacing'):
-//       0  (no standard boost)
-//
-// Archive Tier split (matching Excel exactly):
-//   arcMonth = sum of monthly copies with age >= archiveAfter (moved to Archive tier)
-//   arcYear  = yearlyAllAccum[m - archiveAfter]  ← lookback archiveAfter months in yearly total
-//              (informational sub-row, still counted as Standard tier for billing)
-//   Standard = total - arcMonth  (yearly backups ALL remain in Standard tier)
-//   Cost     = standard * stdPrice + arcMonth * arcPrice
-//
-// Parameters passed from pre-computed accumulators:
-//   monthlyStdAccum  = sum of monthly copies with age < archiveAfter (standard portion)
-//   monthlyArcAccum  = sum of monthly copies with age >= archiveAfter (archive portion)
-//   yearlyAllAccum   = sum of ALL yearly snapshots in retention window
-//   yearlyArcAccum   = yearlyAllAccum[m - archiveAfter]  (lookback archiveAfter months)
 function calcMonth(wg, m, monthlyStdAccum, monthlyArcAccum, yearlyAllAccum, yearlyArcAccum){
   var gf  = grownFullAt(wg, m);
   var ret = wgRetention(wg);
   var avgDaily = weightedAvgDaily(wg.rows);
-
   var daily   = ret.dailyRet * avgDaily * gf;
   var weekly  = ret.weeklyRet * gf;
   var monthlyAll = monthlyStdAccum + monthlyArcAccum;
   var yearly  = yearlyAllAccum || 0;
-
-  // Archive_Month: monthly copies that aged out past archiveAfter threshold
   var arcMonth = monthlyArcAccum;
-  // Archive_Year: yearly snapshots older than archiveAfter months
-  //   = yearlyAllAccum[m - archiveAfter]  (lookback aa months in yearly running total)
-  //   Billed at archive price alongside arcMonth.
   var arcYear  = yearlyArcAccum || 0;
-  // totalRaw = physical sum of all backup copies
   var totalRaw = daily + weekly + monthlyAll + yearly;
-  // Standard = totalRaw - arcMonth  (shown as Standard Tier row)
   var standard = Math.max(0, totalRaw - arcMonth);
-  // Total Backup Storage = Standard + arcMonth + arcYear  (all 3 sub-rows add up)
   var total    = standard + arcMonth + arcYear;
-  // archive for cost = arcMonth + arcYear (both billed at archive price)
   var archive  = arcMonth + arcYear;
-  // standardBilling for cost = standard (the Standard row value)
   var standardBilling = standard;
-
   return {daily:daily, weekly:weekly, monthly:monthlyAll, yearly:yearly,
           total:total, standard:standard, archive:archive,
           arcMonth:arcMonth, arcYear:arcYear, grownFull:gf,
           standardBilling:standardBilling};
 }
-
-
-// ============================================================
-// PRICING HELPERS
-// ============================================================
 function getStdUSD(){ return parseFloat(document.getElementById('p-std').value)||0.0255; }
 function getArcUSD(){ return parseFloat(document.getElementById('p-arc').value)||0.0026; }
 function getRate()  { return parseFloat(document.getElementById('p-rate').value)||35.0097; }
@@ -548,10 +419,6 @@ function setCur(c){
   document.getElementById('btn-thb').classList.toggle('active',c==='THB');
   renderGrowth();
 }
-
-// ============================================================
-// RENDER WG BLOCK (shared for compute & db)
-// ============================================================
 function renderContainer(type){
   var list = type==='compute'?STATE.compute:STATE.db;
   var cid  = type==='compute'?'compute-container':'db-container';
@@ -561,15 +428,12 @@ function renderContainer(type){
     el.appendChild(buildWGBlock(type,wi));
   });
 }
-
 function buildWGBlock(type,wi){
   var list = type==='compute'?STATE.compute:STATE.db;
   var wg = list[wi];
   var wrap = document.createElement('div');
   wrap.className='wg-block';
   wrap.id='wgblock-'+type+'-'+wi;
-
-  // Header
   var hd = document.createElement('div');
   hd.className='wg-hd';
   hd.innerHTML=
@@ -590,8 +454,6 @@ function buildWGBlock(type,wi){
       ((list.length<=1)?'disabled style="opacity:0.3;cursor:not-allowed;"':'')+
     '>🗑 Delete Group</button>';
   wrap.appendChild(hd);
-
-  // Table
   var tw = document.createElement('div'); tw.className='tbl-wrap';
   var tbl = document.createElement('table'); tbl.className='inp-tbl';
   tbl.innerHTML=
@@ -613,26 +475,19 @@ function buildWGBlock(type,wi){
     '<tbody id="wgtbody-'+type+'-'+wi+'"></tbody>';
   tw.appendChild(tbl);
   wrap.appendChild(tw);
-
-  // Footer
   var ft = document.createElement('div');
   ft.className='wg-ft';
   ft.id='wgft-'+type+'-'+wi;
   wrap.appendChild(ft);
-
-  // Add row button
   var btn = document.createElement('button');
   btn.className='add-btn';
   btn.innerHTML='➕ Add Instance Row';
   btn.style.margin='6px 10px 8px';
   btn.onclick=(function(t,w){ return function(){ addRow(t,w); }; })(type,wi);
   wrap.appendChild(btn);
-
-  // Render rows & footer after insert
   setTimeout(function(){ renderRows(type,wi); updateWGFooter(type,wi); updateAGLabel(type,wi); },0);
   return wrap;
 }
-
 function renderRows(type,wi){
   var list = type==='compute'?STATE.compute:STATE.db;
   var wg = list[wi];
@@ -691,22 +546,19 @@ function updateWGFooter(type,wi){
     '<div class="wg-ft-item">📐 Total Effective Single Full (post-compress): <b>'+fmtN(ef,2)+' GB</b></div>'+'|'+
     '<div class="wg-ft-item">📊 Weighted Avg. Daily Change: <b>'+(wd*100).toFixed(2)+'%</b></div>';
 }
-
 function addRow(type,wi){
   var list=type==='compute'?STATE.compute:STATE.db;
   list[wi].rows.push({name:'Custom Instance',size:0,daily:0.1,dedup:1,compPct:0,dailyRet:7,weeklyRet:4,monthlyRet:12,yearlyRet:1,archiveAfter:0});
   renderRows(type,wi);
   renderGrowth();
 }
-
 function deleteRow(type,wi,ri){
   var list=type==='compute'?STATE.compute:STATE.db;
-  if(list[wi].rows.length<=1) return;  // minimum 1 instance
+  if(list[wi].rows.length<=1) return; 
   list[wi].rows.splice(ri,1);
   renderRows(type,wi);
   renderGrowth();
 }
-
 function renameWG(el,type,wi){
   var list=type==='compute'?STATE.compute:STATE.db;
   var newName=(el.textContent||'').trim();
@@ -714,12 +566,10 @@ function renameWG(el,type,wi){
   else el.textContent=list[wi].label;
   renderGrowth();
 }
-
 function deleteWG(type,wi){
   var list=type==='compute'?STATE.compute:STATE.db;
-  if(list.length<=1) return;  // minimum 1 workload group
+  if(list.length<=1) return; 
   list.splice(wi,1);
-  // Re-label remaining groups
   var prefix=type==='compute'?'🖥️ Compute Backup --WG':'🗄️ DB-WG';
   var idPfx=type==='compute'?'WG':'DB-WG';
   list.forEach(function(wg,i){ wg.id=idPfx+(i+1); wg.label=prefix+(i+1)+'--'; });
@@ -737,9 +587,6 @@ function addWG(type){
   renderContainer(type);
   renderGrowth();
 }
-
-
-// Monthly Growth rate from Annual Growth rate: (1+ag)^(1/12) - 1
 function monthlyGrowthRate(ag){ return Math.pow(1+(ag||0), 1/12) - 1; }
 function monthlyGrowthLabel(ag){ return (monthlyGrowthRate(ag)*100).toFixed(4)+'%'; }
 
@@ -749,21 +596,12 @@ function updateAGLabel(type, wi){
   var el = document.getElementById('ag-lbl-'+type+'-'+wi);
   if(el) el.textContent = '(Monthly Growth = '+monthlyGrowthLabel(ag)+')';
 }
-
-// ============================================================
-// GROWTH TAB — main render
-// ============================================================
 var _charts={};
-
 function renderGrowth(){
   var sp=stdPrice(), ap=arcPrice();
   var allWGs = STATE.compute.concat(STATE.db);
-
-  // Pricing label
   document.getElementById('std-eff').textContent = sym()+(sp).toFixed(6)+'/GB/Mo';
   document.getElementById('arc-eff').textContent = sym()+(ap).toFixed(6)+'/GB/Mo';
-
-  // Summary table
   var sumHtml='<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
     '<th style="text-align:left;padding:5px 10px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Workload</th>'+
     '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Eff. Full GB</th>'+
@@ -793,34 +631,22 @@ function renderGrowth(){
   });
   sumHtml+='</tbody></table>';
   document.getElementById('g-summary').innerHTML=sumHtml;
-
-  // Pre-compute per-WG accumulators for all 60 months
-  var wgMonthlyStdAccum = [];  // monthly copies with age < archiveAfter
-  var wgMonthlyArcAccum = [];  // monthly copies with age >= archiveAfter
-  var wgYearlyAllAccum  = [];  // all yearly snapshots (sliding window sum at month m)
-  var wgYearlyArcAccum  = [];  // arcYear info row: yearlyAllAccum[m - archiveAfter]
-  //
-  // arcYear formula (matches Excel exactly):
-  //   arcYear[m] = yearlyAllAccum[m - archiveAfter]
-  //   i.e. the yearly running total that was current archiveAfter months ago.
-  //   This is an informational sub-row showing "aged" yearly backups.
-  //   It does NOT affect Standard tier or cost (Standard = total - arcMonth only).
-
+  var wgMonthlyStdAccum = []; 
+  var wgMonthlyArcAccum = []; 
+  var wgYearlyAllAccum  = [];  
+  var wgYearlyArcAccum  = [];  
   allWGs.forEach(function(wg){
     var ret = wgRetention(wg);
     var aa  = ret.archiveAfter;
-    var mAll = [];  // {m, gf} for all months seen so far
-    var yWin = []; // {m, gf} for yearly snapshots in retention window
+    var mAll = [];  
+    var yWin = []; 
     var monthlyStdArr=[], monthlyArcArr=[], yearlyAllArr=[], yearlyArcArr=[];
 
     for(var m = 1; m <= 60; m++){
       var gf = grownFullAt(wg, m);
       mAll.push({m:m, gf:gf});
-
-      // Monthly sliding window: copies within retention (age < monthlyRet)
       var mWin = mAll.filter(function(e){ return (m - e.m) < ret.monthlyRet; });
       var mStd=0, mArc=0;
-      // aa=0 means "no archiving" — everything stays Standard, arcMonth=arcYear=0
       if(aa > 0){
         mWin.forEach(function(e){
           if((m - e.m) >= aa) mArc += e.gf;
@@ -831,20 +657,15 @@ function renderGrowth(){
       }
       monthlyStdArr.push(mStd);
       monthlyArcArr.push(mArc);
-
-      // Yearly snapshots: sliding window of last yearlyRet year-ends
       if(m % 12 === 0){
         yWin.push({m:m, gf:gf});
         if(yWin.length > ret.yearlyRet) yWin.shift();
       }
       var yAll = yWin.reduce(function(s,e){ return s+e.gf; }, 0);
       yearlyAllArr.push(yAll);
-
-      // arcYear = yearlyAllAccum[m - archiveAfter]  (lookback aa months)
-      // aa=0 → no arcYear
       var yArc = 0;
       if(aa > 0){
-        var lookbackIdx = m - aa - 1;  // 0-based index
+        var lookbackIdx = m - aa - 1; 
         yArc = (lookbackIdx >= 0) ? (yearlyAllArr[lookbackIdx] || 0) : 0;
       }
       yearlyArcArr.push(yArc);
@@ -855,8 +676,6 @@ function renderGrowth(){
     wgYearlyAllAccum.push(yearlyAllArr);
     wgYearlyArcAccum.push(yearlyArcArr);
   });
-
-  // Compute all months data (60 months)
   var months60=[];
   for(var m=1;m<=60;m++){
     var grandTot=0,grandStd=0,grandArc=0,grandCost=0,grandArcMonth=0,grandArcYear=0;
@@ -874,8 +693,6 @@ function renderGrowth(){
     months60.push({m:m,grandTot:grandTot,grandStd:grandStd,grandArc:grandArc,grandCost:grandCost,
                    grandArcMonth:grandArcMonth,grandArcYear:grandArcYear,wgData:wgData});
   }
-
-  // KPIs
   var m12=months60[11], m60=months60[59];
   var tot12=months60.slice(0,12).reduce(function(s,d){return s+d.grandCost;},0);
   var tot60=months60.reduce(function(s,d){return s+d.grandCost;},0);
@@ -911,26 +728,16 @@ function renderGrowth(){
     kpiCard('Sum. 12-Mo Archive Savings','var(--green)',fmtC(savings12),''+STATE.currency+'')+
     kpiCard('Sum. 36-Mo Archive Savings','var(--green)',fmtC(savings36),''+STATE.currency+'')+
     kpiCard('Sum. 60-Mo Archive Savings','var(--green)',fmtC(savings60),''+STATE.currency+'');
-
-  // Charts (60 months)
   buildStorageChart(months60);
   buildCostChart(months60);
-
-  // Forecast tables
   buildFcTable('fc-12', months60.slice(0,12), allWGs, sp, ap);
   buildFcTable('fc-60', months60, allWGs, sp, ap);
-
-  // Optimization indicators
   buildOptTable(months60.slice(0,12), allWGs);
 }
 
 function kpiCard(label,color,val,unit){
   return '<div class="kpi-card"><div class="kl">'+label+'</div><div class="kv" style="color:'+color+'">'+val+'</div><div class="ku">'+unit+'</div></div>';
 }
-
-// ============================================================
-// CHARTS
-// ============================================================
 function buildStorageChart(data){
   var ctx=document.getElementById('chart-storage');
   if(_charts.storage){_charts.storage.destroy();}
@@ -957,7 +764,6 @@ function buildStorageChart(data){
     }
   });
 }
-
 function buildCostChart(data){
   var ctx=document.getElementById('chart-cost');
   if(_charts.cost){_charts.cost.destroy();}
@@ -982,23 +788,12 @@ function buildCostChart(data){
       }}
   });
 }
-
-// ============================================================
-// FORECAST TABLE (reusable for 12 and 60 months)
-// ============================================================
 function buildFcTable(containerId, data, allWGs, sp, ap){
   var el=document.getElementById(containerId);
   if(!el) return;
 
   var COLS=data.length;
-
-  // Build header
   var html='<table class="fc-tbl"><thead>';
-
-  //html+='<tr><th class="row-hd" style="color:var(--muted);">On Month</th>';
-  //data.forEach(function(d){ html+='<th style="color:var(--muted);font-size:9px;font-style: italic;">'+d.m+'</th>'; });
-  //html+='</tr>';
-
   html+='<tr><th class="row-hd" style="color:var(--muted);font-size:11px;font-weight: bold;">On Year</th>';
   data.forEach(function(d){ html+='<th style="color:var(--muted);font-size:10px;font-style: italic;">'+Math.ceil(d.m/12)+'</th>'; });
   html+='</tr>';
@@ -1006,36 +801,13 @@ function buildFcTable(containerId, data, allWGs, sp, ap){
   html+='<tr><th style="font-size:11px;font-weight: bold;" class="row-hd" >Workload / Metric</th>';
   data.forEach(function(d){ html+='<th style="color:var(--muted);font-size:11px;font-weight: bold;">M'+d.m+'</th>'; });
   html+='</tr>';
-  
-  html+='</thead><tbody>';
-
-  // Per-WG rows --non-toggle--
-		//  allWGs.forEach(function(wg,wi){
-		//    html+='<tr class="wg-sec"><td class="row-hd-wg" colspan="'+(COLS+1)+'">➤&nbsp&nbsp'+wg.label+'</td></tr>';
-
-		//    html+=fcRow('std-r','   📐 Eff. Full Backup Size (GB)',data,function(d){return fmtN(d.wgData[wi].grownFull, 2);});
-		//    html+=fcRow('',     '   &nbsp;&nbsp;   ├ Daily Incremental (GB)',   data,function(d){return fmtN(d.wgData[wi].daily, 2);});
-		//    html+=fcRow('std-r','   &nbsp;&nbsp;   ├ Weekly Full Copies (GB)',  data,function(d){return fmtN(d.wgData[wi].weekly, 2);});
-		//    html+=fcRow('',     '   &nbsp;&nbsp;   ├ Monthly Full Copies (GB)', data,function(d){return fmtN(d.wgData[wi].monthly, 2);});
-		//    html+=fcRow('std-r2','   &nbsp;&nbsp;   └ Yearly Full Copies (GB)',  data,function(d){return fmtN(d.wgData[wi].yearly, 2);});
-		//    html+=fcRow('total-r','   📦 Total Backup Storage (GB)',data,function(d){return fmtN(d.wgData[wi].total, 2);});
-		//    html+=fcRow('std-r','   &nbsp;&nbsp;   ├ Standard Tier (GB)',       data,function(d){return fmtN(d.wgData[wi].standard, 2);});
-		//    html+=fcRow('arc-r','   &nbsp;&nbsp;   ├ Archive Tier (GB) --Month--', data,function(d){return fmtN(d.wgData[wi].arcMonth, 2);});
-		//    html+=fcRow('arc-r','   &nbsp;&nbsp;   └ Archive Tier (GB) --Year--',  data,function(d){return fmtN(d.wgData[wi].arcYear, 2);});
-		//    html+=fcRow('cost-r','  💰 Monthly Cost ('+STATE.currency+')',data,function(d){return fmtC(d.wgData[wi].cost);});
-		//  });
-
-  // Per-WG rows --toggle--
+    html+='</thead><tbody>';
   allWGs.forEach(function(wg, wi){
-     // สร้าง ID ประจำกลุ่มจากดัชนีลูป (เช่น wg-group-0, wg-group-1)
   var groupId = 'wg-group-' + wi;
-     // 1. ปรับแถวหัวข้อกลุ่ม: เพิ่ม onclick เพื่อเรียกฟังก์ชัน toggle และใส่ cursor:pointer
   html+='<tr class="wg-sec" onclick="toggleWGFcRow(\''+groupId+'\', this)" style="cursor:pointer;">' +
         '<td class="row-hd-wg" colspan="'+(COLS+1)+'">' +
         '<span class="toggle-icon">➤</span>&nbsp;&nbsp;'+wg.label+'</td>' +
         '</tr>';
-     // 2. แถวข้อมูลย่อย: เราจะครอบกลุ่มนี้ด้วย "คลาสซ่อน" และผูก Attribute 'data-group' เอาไว้
-     // (สมมุติว่าฟังก์ชัน fcRow ตัวเดิมของคุณไม่มีช่องให้ใส่ class เพิ่มเติม ให้ใช้เทคนิคการเขียนต่อสตริงคลุม หรือเข้าไปแก้ในตัวฟังก์ชัน fcRow ให้ยอมรับ class ลูกเพิ่ม)
   html+=fcRow('std-r hidden-row ' + groupId,  '   📐 Eff. Full Backup Size (GB)',data,function(d){return fmtN(d.wgData[wi].grownFull, 2);});
   html+=fcRow('hidden-row ' + groupId,           '   &nbsp;&nbsp;   ├ Daily Incremental (GB)',   data,function(d){return fmtN(d.wgData[wi].daily, 2);});
   html+=fcRow('std-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   ├ Weekly Full Copies (GB)',  data,function(d){return fmtN(d.wgData[wi].weekly, 2);});
@@ -1047,54 +819,34 @@ function buildFcTable(containerId, data, allWGs, sp, ap){
   html+=fcRow('arc-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   └ Archive Tier (GB) --Year--',  data,function(d){return fmtN(d.wgData[wi].arcYear, 2);});
   html+=fcRow('cost-r hidden-row ' + groupId, '  💰 Monthly Cost ('+STATE.currency+')',data,function(d){return fmtC(d.wgData[wi].cost);});
   });
-
-  // Grand totals
   html+='<tr class="grand-r"><td class="row-hd-blank"></td>';
   data.forEach(function(d){html+='<td class="row-hd-blank"></td>';});
   html+='</tr>';
-  
-  html+='<tr class="grand-r"><td class="row-hd" style="color:var(--text2);font-size:12px;" title="= Standard + Archive --Month-- + Archive --Year--">🏆 Grand Total (GB)</td>';
+    html+='<tr class="grand-r"><td class="row-hd" style="color:var(--text2);font-size:12px;" title="= Standard + Archive --Month-- + Archive --Year--">🏆 Grand Total (GB)</td>';
   data.forEach(function(d){html+='<td style="font-size:10px;color:var(--text2);">'+fmtN(d.grandTot, 2)+'</td>';});
   html+='</tr>';
 
   html+='<tr class="grand-r std-r"><td class="row-hd" style="font-weight:300;font-size:11px">   &nbsp;&nbsp;   ├ Standard Tier Total (GB)</td>';
   data.forEach(function(d){html+='<td style="color:var(--accent2);font-weight:300;font-size:10px">'+fmtN(d.grandStd, 2)+'</td>';});
   html+='</tr>';
-
-    /*-----Ignore Archive Tier Total (GB)----*/
-      //html+='<tr class="grand-r arc-r"><td class="row-hd">   ├ Archive Tier Total (GB)</td>';
-      //data.forEach(function(d){html+='<td>'+fmtN(d.grandArc, 2)+'</td>';});
-      //html+='</tr>';
-
   html+='<tr class="grand-r arc-r" style="opacity:0.85"><td class="row-hd" style="color:var(--archive);font-weight:300;font-size:11px">  &nbsp;&nbsp;  ├ Archive Total (GB) <i>--Month--</i></td>';
   data.forEach(function(d){html+='<td style="color:var(--archive);font-weight:300;font-size:10px">'+fmtN(d.grandArcMonth, 2)+'</td>';});
   html+='</tr>';
-
   html+='<tr class="grand-r arc-r" style="opacity:0.85"><td class="row-hd" style="color:var(--archive);font-weight:300;font-size:11px">   &nbsp;&nbsp;   └ Archive Total (GB) <i>--Year--</i></td>';
   data.forEach(function(d){html+='<td style="color:var(--archive);font-weight:300;font-size:10px">'+fmtN(d.grandArcYear, 2)+'</td>';});
   html+='</tr>';
-  
-    /*-----Ignore Grand Total (TiB)----*/
-      //html+='<tr class="grand-r" style="border-top:1px solid var(--border)"><td class="row-hd" style="color:var(--accent);font-size:11px;">📦 Grand Total (TiB)</td>';
-      //data.forEach(function(d){html+='<td style="color:var(--accent);font-weight:700;">'+(d.grandTot/1024).toFixed(3)+'</td>';});
-      //html+='</tr>';
-
-  html+='<tr class="gcost-r"><td class="row-hd">💰 Total Monthly Cost ('+STATE.currency+')</td>';
+   html+='<tr class="gcost-r"><td class="row-hd">💰 Total Monthly Cost ('+STATE.currency+')</td>';
   data.forEach(function(d){html+='<td>'+fmtC(d.grandCost)+'</td>';});
   html+='</tr>';
-
   var cum=0;
   html+='<tr class="gcost-r" style="opacity:0.8;"><td class="row-hd" style="color:#D29A22;">📊 Cumulative Cost ('+STATE.currency+')</td>';
   data.forEach(function(d){cum+=d.grandCost;html+='<td style="color:#D29A22;">'+fmtC(cum)+'</td>';});
   html+='</tr>';
-
-  //Toggle Select
   var tggSelect = 'target-row';
   html+='<tr class="row-hd-tgg" onclick="toggleByClass(\''+tggSelect+'\', this)" style="cursor:pointer;">' +
         '<td>' +
         '<span class="toggle-icon">➤</span><i>&nbsp;---MoM Growth---</i></td>' +
         '</tr>';
-  //
   html+='<tr class="grey-r hidden-row '+tggSelect+'"><td class="row-hd">📈 MoM Storage Growth (GB)</td>';
   data.forEach(function(d,i){html+='<td>'+(i>0?fmtN(d.grandTot-data[i-1].grandTot, 2):'–')+'</td>';});
   html+='</tr>';
@@ -1106,9 +858,6 @@ function buildFcTable(containerId, data, allWGs, sp, ap){
     html+='<td>'+(prev>0?((d.grandTot-prev)/prev*100).toFixed(1)+'%':'–')+'</td>';
   });
   html+='</tr>';
-
-
-  // Archive savings vs all-standard
   html+='<tr class="grey-r"><td class="row-hd" style="color:var(--green)">💡 Archive Savings vs All-Std</td>';
   data.forEach(function(d){
     var sav=Math.max(0,d.grandTot*sp-d.grandCost);
@@ -1126,10 +875,6 @@ function fcRow(cls,label,data,fn){
   h+='</tr>';
   return h;
 }
-
-// ============================================================
-// OPTIMIZATION INDICATORS
-// ============================================================
 function buildOptTable(data12,allWGs){
   var el=document.getElementById('g-opt');
   if(!el) return;
@@ -1138,21 +883,15 @@ function buildOptTable(data12,allWGs){
     '<th style="text-align:left">Metric</th>'+
     data12.map(function(d){return '<th>M'+d.m+'</th>';}).join('')+
     '</tr></thead><tbody>';
-
-  // Over target
   html+='<tr><td>⚠️ Grand Total vs Target ('+fmtN(TARGET,0)+' GB)</td>';
   data12.forEach(function(d){
     var ok=d.grandTot<=TARGET;
     html+='<td><span class="'+(ok?'bok':'bwarn')+'">'+(ok?'✅ OK':'⚠️ Over')+'</span></td>';
   });
   html+='</tr>';
-
-  // Utilization %
   html+='<tr><td>📊 Utilization % vs Target</td>';
   data12.forEach(function(d){html+='<td style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;">'+(d.grandTot/TARGET*100).toFixed(1)+'%</td>';});
   html+='</tr>';
-
-  // Archive 90-day check
   html+='<tr><td>⏱️ Archive ≥ 90-day Rule (archiveAfter ≥ 3)</td>';
   data12.forEach(function(d,mi){
     var warn=allWGs.some(function(wg,wi){
@@ -1166,10 +905,6 @@ function buildOptTable(data12,allWGs){
   html+='</tbody></table>';
   el.innerHTML=html;
 }
-
-// ============================================================
-// TAB NAVIGATION
-// ============================================================
 function gotoTab(id,el){
   document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -1177,16 +912,10 @@ function gotoTab(id,el){
   document.getElementById('pg-'+id).classList.add('active');
   if(id==='growth') renderGrowth();
 }
-
-// ============================================================
-// TOGGLE LIST
-// ============================================================
 function toggleWGFcRow(groupId, element) {
   element.classList.toggle('collapsed');
-  // ไปตามหาแถวทั้งหมดที่มีคลาสเป็นชื่อกลุ่มที่เราคลิก (เช่น .wg-group-0)
+
   var rows = document.querySelectorAll('tr.' + groupId);
-  
-  // วนลูปเพื่อสลับสถานะแสดงผล (ถ้าซ่อนอยู่ให้แสดง ถ้าแสดงอยู่ให้ซ่อน)
   rows.forEach(function(row) {
     if (row.style.display === 'table-row') {
       row.style.display = 'none';
@@ -1195,23 +924,13 @@ function toggleWGFcRow(groupId, element) {
     }
   });
 }
-
-// ============================================================
-// TOGGLE SELECT AT <TR>
-// ============================================================
 function toggleByClass(tggSelect, element) {
   element.classList.toggle('collapsed');
-  // ไปหาทุกแถวที่มีคลาสนั้น ๆ
   var rows = document.querySelectorAll('tr.' + tggSelect);
   rows.forEach(function(row) {
-    // สั่ง toggle คลาส hidden-row (ถ้ามีอยู่ให้เอาออก ถ้าไม่มีให้ใส่เพิ่ม)
     row.classList.toggle('hidden-row');
   });
 }
-
-// ============================================================
-// TOGGLE SELECT AT <DIV>
-// ============================================================
 function toggleSection(headerElement) {
   // 1. สลับคลาส collapsed ที่ตัวหัวข้อเพื่อสั่งหมุนลูกศร
   headerElement.classList.toggle('collapsed');
@@ -1222,26 +941,15 @@ function toggleSection(headerElement) {
     bodyElement.classList.toggle('hidden-sec');
   }
 }
-
-// ============================================================
-// INIT
-// ============================================================
 (function init(){
   renderContainer('compute');
   renderContainer('db');
-  // Init AG labels
   setTimeout(function(){
     STATE.compute.forEach(function(wg,wi){ updateAGLabel('compute',wi); });
     STATE.db.forEach(function(wg,wi){ updateAGLabel('db',wi); });
     renderGrowth();
   }, 250);
 })();
-
-// ============================================================
-// EXPORT / IMPORT
-// ============================================================
-
-/** Build a clean, serialisable snapshot of all user-entered STATE */
 function buildExportPayload(){
   var now = new Date();
   var pad = function(n){return n<10?'0'+n:n;};
@@ -1261,12 +969,6 @@ function buildExportPayload(){
     db          : JSON.parse(JSON.stringify(STATE.db))
   };
 }
-
-/** Export → triggers "Save As" file-picker via the File System Access API
- *  with fallback to an <a download> if the API is unavailable.           */
-// ============================================================
-// EXPORT AS EXCEL  (SheetJS / xlsx.full.min.js) — Vertical Layout
-// ============================================================
 function exportExcel(){
   if(typeof XLSX === 'undefined'){
     alert('SheetJS library not loaded. Please check your internet connection and reload the page.');
@@ -1275,8 +977,6 @@ function exportExcel(){
   var sp = stdPrice(), ap = arcPrice(), cur = STATE.currency;
   var rateTHB = getRate(), stdUSD = getStdUSD(), arcUSD = getArcUSD();
   var allWGs = STATE.compute.concat(STATE.db);
-
-  // ── Re-compute 60-month data ──────────────────────────────
   var wgMStd=[], wgMArc=[], wgYAll=[], wgYArc=[];
   allWGs.forEach(function(wg){
     var ret=wgRetention(wg), aa=ret.archiveAfter;
@@ -1308,10 +1008,7 @@ function exportExcel(){
     months60.push({m:m,grandTot:gT,grandStd:gS,grandArc:gA,grandCost:gC,
                    grandArcMonth:gAMo,grandArcYear:gAYr,wgData:wd});
   }
-
   var wb = XLSX.utils.book_new();
-
-  // ── Style factory helpers ────────────────────────────────────
   var BORDER_THIN = {
     top:   {style:'thin', color:{rgb:'BFBFBF'}},
     bottom:{style:'thin', color:{rgb:'BFBFBF'}},
@@ -1346,23 +1043,14 @@ function exportExcel(){
     if(border)   s.border = border;
     return s;
   }
-  // Short aliases
   var AL_C  = {horizontal:'center', vertical:'center', wrapText:true};
   var AL_L  = {horizontal:'left',   vertical:'center', wrapText:false};
   var AL_R  = {horizontal:'right',  vertical:'center', wrapText:false};
   var AL_CW = {horizontal:'center', vertical:'center', wrapText:true};
-
-  // WG header fill colours (cycle)
   var WG_FILLS = ['1F3864','2E4A7A','1A5276','0D3349','34495E'];
-  // Per-WG column fills (alternate light)
   var WG_COL_FILLS = ['EBF5FB','F0F4F8','EAF4EA','FFF8EC','F5EEF8'];
-
   function sc(v,s){ return {v:v, t:(typeof v==='number'?'n':'s'), s:s||{}}; }
   function nc(v,s){ return {v:(typeof v==='number'?v:parseFloat(v)||0), t:'n', s:s||{}}; }
-
-  // ================================================================
-  // SHEET 1 — 📋 Summary  (same as before, unchanged)
-  // ================================================================
   var S1=[];
   var TITLE_S = mkS({bold:true,sz:14,color:{rgb:'FFFFFF'}},'0E7C7B',{horizontal:'left',vertical:'center',wrapText:false});
   var HDR_DARK = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_THIN);
@@ -1372,7 +1060,6 @@ function exportExcel(){
   var UNIT_S   = mkS({sz:9,color:{rgb:'777777'}},null,{horizontal:'center'});
   var KPI_L    = mkS({bold:true,sz:10},'EBF3FB',AL_L,'@',BORDER_THIN);
   function kpiN(clr){ return mkS({sz:10,color:{rgb:clr||'000000'}},'FFFFFF',AL_R,'#,##0.00',BORDER_THIN); }
-
   S1.push([sc('OCI Backup Storage Calculator — Export Report',TITLE_S)]);
   S1.push([sc('Generated: '+new Date().toLocaleString(),mkS({sz:9,color:{rgb:'888888'}}))]);
   S1.push([]);
@@ -1403,7 +1090,6 @@ function exportExcel(){
     ]);
   });
   S1.push([]);
-  // KPIs
   var m12d=months60[11],m36d=months60[35],m60d=months60[59];
   var tot12=months60.slice(0,12).reduce(function(s,d){return s+d.grandCost;},0);
   var tot36=months60.slice(0,36).reduce(function(s,d){return s+d.grandCost;},0);
@@ -1419,48 +1105,26 @@ function exportExcel(){
   S1.push([sc('Monthly Cost @ Period-End ('+cur+')',KPI_L),nc(m12d.grandCost,kpiN('7B2C00')),nc(m36d.grandCost,kpiN('7B2C00')),nc(m60d.grandCost,kpiN('7B2C00'))]);
   S1.push([sc('Cumulative Cost ('+cur+')',KPI_L),nc(tot12,kpiN('C55A11')),nc(tot36,kpiN('C55A11')),nc(tot60,kpiN('C55A11'))]);
   S1.push([sc('Archive Savings vs All-Std ('+cur+')',KPI_L),nc(sav12,kpiN('1E6B2E')),nc(sav36,kpiN('1E6B2E')),nc(sav60,kpiN('1E6B2E'))]);
-
   var ws1=XLSX.utils.aoa_to_sheet(S1);
   ws1['!cols']=[{wch:36},{wch:18},{wch:18},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:14},{wch:16}];
   ws1['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:1,c:0},e:{r:1,c:9}},{s:{r:3,c:0},e:{r:3,c:9}}];
   ws1['!rows']=[{hpt:22},{hpt:14}];
   XLSX.utils.book_append_sheet(wb,ws1,'📋 Summary');
-
-  // ================================================================
-  // SHEET 2 — 📊 60-Month Forecast  (VERTICAL layout)
-  // Columns:  A=Month | B=Year | [per WG: 10 data cols + 1 blank] | Grand Total block
-  // Rows:     R1=WG name header | R2=col header | R3-R62=months 1-60 | R63=TOTAL
-  // ================================================================
-
-  // Column offsets: col 0=Month(A), col 1=Year(B)
-  // Each WG: 10 cols starting at colBase = 2 + wi*11
-  // Grand total block: 2 + nWG*11
-
   var nWG = allWGs.length;
-  var COL_PER_WG = 12; // 10 data + 2 spacer
+  var COL_PER_WG = 12;
   var COL_GRAND  = 2 + nWG * COL_PER_WG;
-
-  // Number of total columns: COL_GRAND + 7 (grand total sub-cols)
   var TOTAL_COLS = COL_GRAND + 7;
-
-  // ── Style definitions for Forecast sheet ──────────────────────
-
-  // Row 1: WG name banner
   function wgBannerStyle(wi){
     return mkS({bold:true,sz:12,color:{rgb:'FFFFFF'}},WG_FILLS[wi%WG_FILLS.length],AL_CW,'@',BORDER_THICK);
   }
-  // Row 2: Column header
   var COL_HDR_MO  = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',BORDER_MED_BOTTOM);
   var COL_HDR_YR  = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'2C3E50',AL_C,'@',BORDER_MED_BOTTOM);
   function colHdrWG(wi){
     return mkS({bold:true,sz:9,color:{rgb:'FFFFFF'}},WG_FILLS[wi%WG_FILLS.length],AL_CW,'@',BORDER_MED_BOTTOM);
   }
   var COL_HDR_GRD = mkS({bold:true,sz:9,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_MED_BOTTOM);
-
-  // Data rows
   var MO_CELL  = mkS({bold:true,sz:10},'D6E4F0',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
   var YR_CELL  = mkS({bold:true,sz:10},'BDD7EE',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
-
   function wgDataStyle(wi, isTotal, isArc, isCost, isStd){
     var fill = WG_COL_FILLS[wi%WG_COL_FILLS.length];
     if(isTotal) fill = 'D5E8F4';
@@ -1472,7 +1136,6 @@ function exportExcel(){
     var bold = isTotal || isCost;
     return mkS({bold:bold,sz:9,color:{rgb:fontClr}},fill,AL_R,'#,##0.00',BORDER_THIN);
   }
-
   var GRAND_TOT_S  = mkS({bold:true,sz:10},'BDD7EE',AL_R,'#,##0.00',BORDER_MED_RIGHT);
   var GRAND_STD_S  = mkS({sz:9,color:{rgb:'1A5276'}},'EBF5FB',AL_R,'#,##0.00',BORDER_THIN);
   var GRAND_ARC_S  = mkS({sz:9,color:{rgb:'7B3F00'}},'FFF3E0',AL_R,'#,##0.00',BORDER_THIN);
@@ -1482,45 +1145,30 @@ function exportExcel(){
   var TOTAL_ROW_S  = mkS({bold:true,sz:10},'1F3864',AL_R,'#,##0.00',{top:{style:'medium',color:{rgb:'1F3864'}},bottom:{style:'medium',color:{rgb:'1F3864'}},left:{style:'thin',color:{rgb:'BFBFBF'}},right:{style:'thin',color:{rgb:'BFBFBF'}}});
   var TOTAL_LBL_S  = mkS({bold:true,sz:11,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',{top:{style:'medium',color:{rgb:'1F3864'}},bottom:{style:'medium',color:{rgb:'1F3864'}},left:{style:'medium',color:{rgb:'1F3864'}},right:{style:'thin',color:{rgb:'BFBFBF'}}});
   var SPACER_S     = mkS(null,'F0F0F0',null,null,{left:{style:'medium',color:{rgb:'1F3864'}},right:{style:'medium',color:{rgb:'1F3864'}}});
-
   function emptyCell(fillRgb){
     return {v:'',t:'s',s: fillRgb ? mkS(null,fillRgb) : {fill:{patternType:'solid',fgColor:{rgb:'FFFFFF'},bgColor:{indexed:64}}}};
   }
-
-  // ── Build the sheet data as a 2D array ──────────────────────
-  // We'll build row by row.
-
-  // Helper: build a full row of TOTAL_COLS cells, starting with a base array
   function fullRow(base){
     while(base.length < TOTAL_COLS) base.push(emptyCell());
     return base;
   }
-
   var sheetData = [];
-
-  // ── ROW 0: Title ────────────────────────────────────────────
   var titleRow = [sc('OCI Backup Storage — 60-Month Forecast ('+cur+')', mkS({bold:true,sz:14,color:{rgb:'FFFFFF'}},'0E7C7B',{horizontal:'left',vertical:'center',wrapText:false}))];
   sheetData.push(fullRow(titleRow));
-
-  // ── ROW 1: WG name banners (spans 10 cols per WG, col A+B blank) ──
   var bannerRow = [emptyCell('2C3E50'), emptyCell('2C3E50')];
   allWGs.forEach(function(wg,wi){
     bannerRow.push(sc(wg.label, wgBannerStyle(wi)));
-    // fill params
     var ret = wgRetention(wg);
     var ef  = effectiveFull(wg.rows);
     var wd  = weightedAvgDaily(wg.rows);
     var infoStr = 'Eff.Full: '+ef.toFixed(1)+' GB | Daily Chg: '+(wd*100).toFixed(1)+'% | Day: '+ret.dailyRet+' | Wk: '+ret.weeklyRet+' | Mo: '+ret.monthlyRet+' | Yr: '+ret.yearlyRet+' | ArcAfter: '+ret.archiveAfter+' mo';
     for(var k=1;k<10;k++) bannerRow.push(sc(k===1?infoStr:'', mkS({sz:8,italic:true,color:{rgb:'CCDDEE'}},WG_FILLS[wi%WG_FILLS.length],{horizontal:'left',vertical:'center',wrapText:false},'@',BORDER_THICK)));
-    bannerRow.push(emptyCell('F0F0F0')); // spacer col
+    bannerRow.push(emptyCell('F0F0F0')); 
     bannerRow.push(emptyCell('F0F0F0'));
   });
-  // Grand total banner
   bannerRow.push(sc('🏆 Grand Totals', mkS({bold:true,sz:12,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',BORDER_THICK)));
   for(var k=1;k<7;k++) bannerRow.push(emptyCell('1F3864'));
   sheetData.push(fullRow(bannerRow));
-
-  // ── ROW 2: Column headers ───────────────────────────────────
   var hdrRow = [sc('Month', COL_HDR_MO), sc('Year', COL_HDR_YR)];
   var wgMetricHeaders = [
     'Eff. Full\nBackup (GB)',
@@ -1538,36 +1186,28 @@ function exportExcel(){
     wgMetricHeaders.forEach(function(h){
       hdrRow.push(sc(h, colHdrWG(wi)));
     });
-    hdrRow.push(emptyCell('E8E8E8')); // spacer
-    hdrRow.push(emptyCell('E8E8E8')); // spacer col B (2 wide for readability)
+    hdrRow.push(emptyCell('E8E8E8')); 
+    hdrRow.push(emptyCell('E8E8E8'));
   });
-  // Grand total headers
   var grandHdrs = ['Grand Total\n(GB)','Standard\nTier (GB)','Archive Mo\n(GB)','Archive Yr\n(GB)','Monthly Cost\n('+cur+')','Cumulative\nCost ('+cur+')','Archive\nSavings ('+cur+')'];
   grandHdrs.forEach(function(h){ hdrRow.push(sc(h, COL_HDR_GRD)); });
   sheetData.push(fullRow(hdrRow));
-
-  // ── ROWS 3–62: Monthly data ──────────────────────────────────
   var cumCost = 0;
   months60.forEach(function(d, mi){
     var isYearEnd = (d.m % 12 === 0);
     var yearNum   = Math.ceil(d.m / 12);
     var yrFill    = yearNum % 2 === 0 ? 'F0F6FC' : 'FFFFFF';
-
     var moStyle = mkS({bold:true,sz:10},'D6E4F0',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
     var yrStyle = mkS({bold: isYearEnd,sz:10, color:{rgb: isYearEnd?'1F3864':'595959'}}, isYearEnd?'BDD7EE':yrFill,{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
-
     var row = [nc(d.m, moStyle), nc(yearNum, yrStyle)];
-
     allWGs.forEach(function(wg,wi){
       var wd = d.wgData[wi];
       var wf = WG_COL_FILLS[wi%WG_COL_FILLS.length];
       var rowFill = isYearEnd ? 'D5E8F4' : wf;
-
       function wS(bold, clr, isTot, isArc2, isCost2, isStd2){
         var f = isTot ? (isYearEnd?'C7DCF0':'D5E8F4') : (isCost2?(isYearEnd?'F5CBBB':'FCE4D6'):(isArc2?(isYearEnd?'F5E0CC':'FFF3E0'):rowFill));
         return mkS({bold:bold,sz:9,color:{rgb:clr}},f,AL_R,'#,##0.00',BORDER_THIN);
       }
-
       row.push(nc(wd.grownFull,  wS(true,  '1F3864', true,  false, false, false)));
       row.push(nc(wd.daily,      wS(false, '444444', false, false, false, false)));
       row.push(nc(wd.weekly,     wS(false, '444444', false, false, false, false)));
@@ -1578,24 +1218,19 @@ function exportExcel(){
       row.push(nc(wd.arcMonth,   wS(false, '7B3F00', false, true,  false, false)));
       row.push(nc(wd.arcYear,    wS(false, '7B3F00', false, true,  false, false)));
       row.push(nc(wd.cost,       wS(true,  '7B2C00', false, false, true,  false)));
-      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0')); // spacer
-      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0')); // spacer col 2
+      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0')); 
+      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0'));
     });
-
-    // Grand total columns
     cumCost += d.grandCost;
     var sav = Math.max(0, d.grandTot*sp - d.grandCost);
     var grdFill = isYearEnd ? 'A9CCE3' : null;
-
     function gS(base){ return grdFill ? Object.assign({}, base, {s: Object.assign({}, base.s||{}, {fill:{patternType:'solid',fgColor:{rgb:grdFill},bgColor:{indexed:64}}})}) : base; }
-
     var gTotS  = grdFill ? mkS({bold:true,sz:10}         ,grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_TOT_S;
     var gStdS  = grdFill ? mkS({sz:9,color:{rgb:'1A5276'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)     : GRAND_STD_S;
     var gArcS  = grdFill ? mkS({sz:9,color:{rgb:'7B3F00'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)     : GRAND_ARC_S;
     var gCstS  = grdFill ? mkS({bold:true,sz:10,color:{rgb:'7B2C00'}},grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_COST_S;
     var gCumS  = grdFill ? mkS({bold:true,sz:10,color:{rgb:'C55A11'}},grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_CUM_S;
     var gSavS  = grdFill ? mkS({sz:9,color:{rgb:'1E6B2E'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)    : GRAND_SAV_S;
-
     row.push(nc(d.grandTot,     gTotS));
     row.push(nc(d.grandStd,     gStdS));
     row.push(nc(d.grandArcMonth,gArcS));
@@ -1603,11 +1238,8 @@ function exportExcel(){
     row.push(nc(d.grandCost,    gCstS));
     row.push(nc(cumCost,        gCumS));
     row.push(nc(sav,            gSavS));
-
     sheetData.push(fullRow(row));
   });
-
-  // ── ROW 63: TOTALS ──────────────────────────────────────────
   var totRow = [sc('60-Mo TOTAL', TOTAL_LBL_S), emptyCell('1F3864')];
   allWGs.forEach(function(wg,wi){
     var metrics = ['grownFull','daily','weekly','monthly','yearly','total','standard','arcMonth','arcYear','cost'];
@@ -1618,7 +1250,6 @@ function exportExcel(){
     totRow.push(emptyCell('1F3864'));
     totRow.push(emptyCell('1F3864'));
   });
-  // Grand total row sums
   var gSumTot=months60.reduce(function(s,d){return s+d.grandTot;},0);
   var gSumStd=months60.reduce(function(s,d){return s+d.grandStd;},0);
   var gSumAMo=months60.reduce(function(s,d){return s+d.grandArcMonth;},0);
@@ -1630,72 +1261,54 @@ function exportExcel(){
   totRow.push(nc(gSumAYr,totGrdS)); totRow.push(nc(gSumCst,totGrdS)); totRow.push(nc(gSumCst,totGrdS));
   totRow.push(nc(gSumSav,totGrdS));
   sheetData.push(fullRow(totRow));
-
-  // ── Create worksheet ─────────────────────────────────────────
   var ws2 = XLSX.utils.aoa_to_sheet(sheetData);
 
-  // Column widths
   var cols2 = [
-    {wch:7},   // A: Month
-    {wch:6}    // B: Year
+    {wch:7},   
+    {wch:6}   
   ];
   allWGs.forEach(function(){
-    cols2.push({wch:13}); // Eff.Full (bold)
-    cols2.push({wch:12}); // Daily
-    cols2.push({wch:12}); // Weekly
-    cols2.push({wch:12}); // Monthly
-    cols2.push({wch:12}); // Yearly
-    cols2.push({wch:13}); // Total (bold)
-    cols2.push({wch:12}); // Standard
-    cols2.push({wch:13}); // Arc Mo
-    cols2.push({wch:13}); // Arc Yr
-    cols2.push({wch:13}); // Cost (bold)
-    cols2.push({wch:2});  // spacer
-    cols2.push({wch:2});  // spacer2
+    cols2.push({wch:13}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:2});  
+    cols2.push({wch:2});  
   });
-  // Grand total columns
-  cols2.push({wch:14}); // Grand Total
-  cols2.push({wch:13}); // Grand Std
-  cols2.push({wch:12}); // Grand Arc Mo
-  cols2.push({wch:12}); // Grand Arc Yr
-  cols2.push({wch:14}); // Grand Cost
-  cols2.push({wch:14}); // Cumulative
-  cols2.push({wch:13}); // Savings
+  cols2.push({wch:14});
+  cols2.push({wch:13}); 
+  cols2.push({wch:12});
+  cols2.push({wch:12}); 
+  cols2.push({wch:14}); 
+  cols2.push({wch:14}); 
+  cols2.push({wch:13});
   ws2['!cols'] = cols2;
 
-  // Row heights
-  var rows2 = [{hpt:20},{hpt:36},{hpt:42}]; // title, banner, header
+  var rows2 = [{hpt:20},{hpt:36},{hpt:42}]; 
   for(var m=0;m<60;m++) rows2.push({hpt:16});
-  rows2.push({hpt:22}); // totals row
+  rows2.push({hpt:22}); 
   ws2['!rows'] = rows2;
-
-  // Merges: title, WG banners (row 1 = index 1), Grand total banner
   var merges2 = [
-    {s:{r:0,c:0},e:{r:0,c:TOTAL_COLS-1}},       // title
-    {s:{r:1,c:0},e:{r:1,c:1}},                   // Month+Year label in banner
-    {s:{r:2,c:0},e:{r:2,c:0}},                   // Month header
-    {s:{r:2,c:1},e:{r:2,c:1}},                   // Year header
+    {s:{r:0,c:0},e:{r:0,c:TOTAL_COLS-1}},       
+    {s:{r:1,c:0},e:{r:1,c:1}},                  
+    {s:{r:2,c:0},e:{r:2,c:0}},                 
+    {s:{r:2,c:1},e:{r:2,c:1}},                 
   ];
   allWGs.forEach(function(wg,wi){
     var cb = 2 + wi * COL_PER_WG;
-    // Banner merge (cols cb..cb+9), spacer stays separate
     merges2.push({s:{r:1,c:cb},e:{r:1,c:cb+9}});
-    // Totals row merge label col 0-1 already done
   });
-  // Grand total banner merge
   merges2.push({s:{r:1,c:COL_GRAND},e:{r:1,c:TOTAL_COLS-1}});
-  // Totals row: col 0-1 merge
   merges2.push({s:{r:63,c:0},e:{r:63,c:1}});
   ws2['!merges'] = merges2;
-
-  // Freeze: 3 rows (title+banner+header) and 2 cols (Month+Year)
   ws2['!freeze'] = {xSplit:2, ySplit:3};
-
   XLSX.utils.book_append_sheet(wb, ws2, '📊 60-Month Forecast');
-
-  // ================================================================
-  // SHEET 3 — 📅 Annual Summary
-  // ================================================================
   var S3=[];
   var AS_HDR = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_MED_BOTTOM);
   function asN(clr,fillRgb){ return mkS({sz:10,color:{rgb:clr||'000000'}},fillRgb||'FFFFFF',AL_R,'#,##0.00',BORDER_THIN); }
@@ -1726,20 +1339,15 @@ function exportExcel(){
     {v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},
     nc(totalAnn,TFS),nc(totalAnn,TFS),nc(totalSav3,mkS({bold:true,sz:11,color:{rgb:'1E6B2E'}},'BDD7EE',AL_R,'#,##0.00',BORDER_THIN))
   ]);
-
   var ws3=XLSX.utils.aoa_to_sheet(S3);
   ws3['!cols']=[{wch:12},{wch:14},{wch:22},{wch:18},{wch:16},{wch:24},{wch:22},{wch:24},{wch:24}];
   ws3['!rows']=[{hpt:20},{hpt:14},{hpt:6},{hpt:30}];
   ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
   XLSX.utils.book_append_sheet(wb,ws3,'📅 Annual Summary');
-
-  // ── Download ──────────────────────────────────────────────────
   var now3=new Date(),p3=function(n){return n<10?'0'+n:n;};
   var dt3=now3.getFullYear()+''+p3(now3.getMonth()+1)+''+p3(now3.getDate())+'T'+p3(now3.getHours())+p3(now3.getMinutes())+p3(now3.getSeconds());
   XLSX.writeFile(wb,'OCI_Backup_Calculator_'+dt3+'.xlsx');
 }
-
-
 async function exportJSON(){
   var payload  = buildExportPayload();
   var jsonStr  = JSON.stringify(payload, null, 2);
@@ -1749,8 +1357,6 @@ async function exportJSON(){
   var datePart = now.getFullYear()+''+pad(now.getMonth()+1)+''+pad(now.getDate());
   var datetimePart  = now.getFullYear()+''+pad(now.getMonth()+1)+''+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
   var suggestedName = 'OCI_Backup_Calculator_'+datetimePart+'.json';
-
-  // Try File System Access API (shows native Save As dialog)
   if(window.showSaveFilePicker){
     try{
       var fh = await window.showSaveFilePicker({
@@ -1763,14 +1369,11 @@ async function exportJSON(){
       var writable = await fh.createWritable();
       await writable.write(blob);
       await writable.close();
-      return;                // done — native dialog handled destination
+      return;      
     } catch(e){
-      if(e.name==='AbortError') return;   // user cancelled
-      // fall through to <a download> fallback
+      if(e.name==='AbortError') return;   
     }
   }
-
-  // Fallback: <a download> — browser auto-downloads to default Downloads folder
   var url = URL.createObjectURL(blob);
   var a   = document.createElement('a');
   a.href  = url;
@@ -1782,8 +1385,6 @@ async function exportJSON(){
     URL.revokeObjectURL(url);
   }, 200);
 }
-
-/** Import modal helpers */
 function closeImportModal(e){
   if(e && e.target!==document.getElementById('import-modal')) return;
   document.getElementById('import-modal').classList.remove('open');
@@ -1811,14 +1412,10 @@ function doImport(){
     document.getElementById('import-status').textContent='❌ JSON ไม่ถูกต้อง: '+err.message;
     return;
   }
-
-  // Validate required keys
   if(!parsed.compute || !parsed.db){
     document.getElementById('import-status').textContent='❌ ไฟล์ไม่ถูกต้อง — ต้องมี compute และ db';
     return;
   }
-
-  // Apply to STATE
   STATE.compute  = parsed.compute;
   STATE.db       = parsed.db;
   if(parsed.currency) STATE.currency = parsed.currency;
@@ -1826,39 +1423,23 @@ function doImport(){
   if(parsed.arcUSD  && document.getElementById('p-arc'))  document.getElementById('p-arc').value  = parsed.arcUSD;
   if(parsed.thbRate && document.getElementById('p-rate')) document.getElementById('p-rate').value = parsed.thbRate;
   if(parsed.currency) setCur(parsed.currency);
-
-  // Re-render everything
   renderContainer('compute');
   renderContainer('db');
   renderGrowth();
 
   document.getElementById('import-modal').classList.remove('open');
   document.getElementById('import-status').textContent='';
-
-  // Go to first compute tab so user can see results
   var tabs=document.querySelectorAll('.tab');
   tabs.forEach(function(t){t.classList.remove('active');});
   tabs[1] && tabs[1].classList.add('active');
   gotoTab('compute', tabs[1]);
 }
-
-// Close import modal when pressing Escape
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape') document.getElementById('import-modal').classList.remove('open');
 });
-
-
-// ============================================================
-// SAVE (self-modifying HTML — bakes current STATE into the file)
-// ============================================================
-
-// Persistent file handle — retained in memory for the lifetime of this tab.
-// First save: user picks the file once (grants write permission).
-// Subsequent saves in the same session: write directly, no picker shown.
 var _savedFileHandle = null;
 
 function saveToFile(){
-  // Update modal hint based on whether we already have a handle
   var hint = document.getElementById('save-confirm-hint');
   if(hint){
     if(_savedFileHandle){
@@ -1871,21 +1452,15 @@ function saveToFile(){
   }
   document.getElementById('save-confirm').classList.add('open');
 }
-
 function closeSaveConfirm(e){
   if(e && e.target !== document.getElementById('save-confirm')) return;
   document.getElementById('save-confirm').classList.remove('open');
 }
-
 async function confirmSave(){
   document.getElementById('save-confirm').classList.remove('open');
-
-  // --- 1. Collect current pricing inputs -----------------
   var stdUSD  = document.getElementById('p-std')  ? parseFloat(document.getElementById('p-std').value)  : 0.0255;
   var arcUSD  = document.getElementById('p-arc')  ? parseFloat(document.getElementById('p-arc').value)  : 0.0026;
   var thbRate = document.getElementById('p-rate') ? parseFloat(document.getElementById('p-rate').value) : 35.0097;
-
-  // --- 2. Build the new STATE literal --------------------
   var stateObj = {
     currency : STATE.currency,
     compute  : STATE.compute,
@@ -1893,8 +1468,6 @@ async function confirmSave(){
   };
   var stateJSON = JSON.stringify(stateObj, null, 2);
   var newStateBlock = 'var STATE = ' + stateJSON + ';';
-
-  // --- 3. Get original HTML source -----------------------
   var originalHtml;
   try {
     var resp = await fetch(window.location.href);
@@ -1902,14 +1475,10 @@ async function confirmSave(){
   } catch(e) {
     originalHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
   }
-
-  // --- 4. Replace STATE block in source ------------------
   var patched = originalHtml.replace(
     /var STATE\s*=\s*\{[\s\S]*?\}\s*;(?=\s*\/\/\s*={10,}|\s*\/\/\s*FORMULAS|\s*function)/,
     newStateBlock
   );
-
-  // --- 5. Patch pricing input default values ---------------
   patched = patched
     .replace(/(id="p-std"[^>]*value=")[^"]*(")/,  '$1'+stdUSD+'$2')
     .replace(/(id="p-arc"[^>]*value=")[^"]*(")/,  '$1'+arcUSD+'$2')
@@ -1921,8 +1490,6 @@ async function confirmSave(){
   }
 
   var blob = new Blob([patched], {type:'text/html;charset=utf-8'});
-
-  // Helper: visual feedback on save button
   function flashSaved(label){
     var btn = document.getElementById('save-btn');
     var orig = btn.innerHTML;
@@ -1930,11 +1497,8 @@ async function confirmSave(){
     btn.classList.add('saving');
     setTimeout(function(){ btn.innerHTML=orig; btn.classList.remove('saving'); }, 2500);
   }
-
-  // --- 6. File System Access API — true overwrite --------
   if(window.showOpenFilePicker){
     try{
-      // Reuse existing handle if available and still writable
       if(!_savedFileHandle){
         var handles = await window.showOpenFilePicker({
           id: 'oci-calc-overwrite',
@@ -1947,7 +1511,6 @@ async function confirmSave(){
         });
         _savedFileHandle = handles[0];
       }
-      // Verify/request write permission
       var perm = await _savedFileHandle.queryPermission({mode:'readwrite'});
       if(perm !== 'granted') perm = await _savedFileHandle.requestPermission({mode:'readwrite'});
       if(perm !== 'granted'){
@@ -1955,7 +1518,6 @@ async function confirmSave(){
         alert('⚠️ ไม่ได้รับอนุญาตให้เขียนไฟล์');
         return;
       }
-      // Overwrite
       var writable = await _savedFileHandle.createWritable();
       await writable.write(blob);
       await writable.close();
@@ -1964,11 +1526,8 @@ async function confirmSave(){
     } catch(ex){
       if(ex.name === 'AbortError'){ _savedFileHandle = null; return; }
       _savedFileHandle = null;
-      // fall through to download fallback
     }
   }
-
-  // --- 7. Fallback: auto-download with original filename ---
   var currentName = window.location.pathname.split('/').pop() || 'OCI_Backup_Storage_Calculator.html';
   if(!currentName.match(/\.html?$/i)) currentName = 'OCI_Backup_Storage_Calculator.html';
   var url = URL.createObjectURL(blob);
@@ -1983,8 +1542,6 @@ async function confirmSave(){
     flashSaved('✅ Downloaded!');
   }, 200);
 }
-
-// Close save confirm on Escape
 document.addEventListener('keydown', function(e){
   if(e.key==='Escape') closeSaveConfirm();
 });
