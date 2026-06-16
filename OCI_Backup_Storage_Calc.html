@@ -18,9 +18,6 @@
   <div class="hsub">Oracle Cloud Infrastructure / AIS Cloud | Object Storage Backup Sizing</div>
 </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
-    <button class="hbtn save" id="save-btn" onclick="saveToFile()" title="Save all values ​​directly to this HTML file (self-save).">
-      💾 Save
-    </button>
     <button class="hbtn primary" onclick="exportJSON()" title="Export configuration as .json file">
       📤 Export..
     </button>
@@ -30,21 +27,6 @@
     <button class="hbtn" onclick="toggleImportMenu(event)" id="import-btn" title="Load previously saved configuration">
       📂 Import
     </button>
-  </div>
-</div>
-<div class="confirm-overlay" id="save-confirm" onclick="closeSaveConfirm(event)">
-  <div class="confirm-box" onclick="event.stopPropagation()">
-    <div class="confirm-icon">💾</div>
-    <div class="confirm-title">💾 Please overwrite the existing file.</div>
-    <div class="confirm-desc">First time, all input values ​​will be saved <strong>overwrite the existing file</strong> directly
-      <br>
-      <br>
-      <span style="color:var(--yellow);" id="save-confirm-hint">⚠️ The next time in this window, <br>it will save immediately without requiring any selection.</span>
-    </div>
-    <div class="confirm-row">
-      <button class="modal-btn" onclick="closeSaveConfirm()">Cancel</button>
-      <button class="modal-btn ok" onclick="confirmSave()">✅ Save</button>
-    </div>
   </div>
 </div>
 <div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
