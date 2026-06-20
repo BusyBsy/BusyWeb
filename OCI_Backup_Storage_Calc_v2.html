@@ -4,25 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OCI Backup Storage Calculator</title>
-
- <!-- CSS STYLE -->
-  <!-- use offline CSS -->
-  <!-- <link rel="stylesheet" href="../Style&CSS/style.css"> -->
-  <!-- use online CSS by jsdelivr(URL) -->
+	<link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/BusyBsy/Style-CSS@main/style.css">
-
- <!-- JS(EXCEL) SCRIPT -->
-  <!-- แนะนำให้ใส่ defer เพื่อให้เบราว์เซอร์ดาวน์โหลดสคริปต์ขนานไปกับการอ่านหน้าเว็บ ทำให้อ่านหน้าเว็บเสร็จไวขึ้น -->
-  <!-- use offline JS -->
-    <!-- <script src="xlsx-style.js" defer></script> -->
-  <!-- use online JS by https://raw.githack.com/ -->
-    <!-- <script src="https://rawcdn.githack.com/BusyBsy/myJS/refs/heads/main/xlsx-style.js" defer></script> -->
-  <!-- use online JS by jsdelivr(URL) -->
-    <script src="https://cdn.jsdelivr.net/gh/BusyBsy/myJS@main/xlsx-style.js" defer></script>
-
+  <script src="https://cdn.jsdelivr.net/gh/BusyBsy/myJS@main/xlsx-style.js" defer></script>
 </head>
 <body>
-
 <div class="header">
   <div class="hlogo">☁️</div>
   <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -30,7 +16,7 @@
       <div class="htitle">OCI Backup Storage Calculator</div>
       <div class="hbadge" style="margin-left:0;">v3.0</div>
     </div>
-  <div class="hsub">Oracle Cloud Infrastructure / AIS Cloud | Object Storage Backup Sizing</div>
+  <div class="hsub">Oracle Cloud Infrastructure | Object Storage Backup Sizing</div>
 
 </div>
   <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
@@ -49,25 +35,6 @@
 
   </div>
 </div>
-
-<!-- Save confirm modal -->
-<div class="confirm-overlay" id="save-confirm" onclick="closeSaveConfirm(event)">
-  <div class="confirm-box" onclick="event.stopPropagation()">
-    <div class="confirm-icon">💾</div>
-    <div class="confirm-title">💾 Please overwrite the existing file.</div>
-    <div class="confirm-desc">First time, all input values ​​will be saved <strong>overwrite the existing file</strong> directly
-      <br>
-      <br>
-      <span style="color:var(--yellow);" id="save-confirm-hint">⚠️ The next time in this window, <br>it will save immediately without requiring any selection.</span>
-    </div>
-    <div class="confirm-row">
-      <button class="modal-btn" onclick="closeSaveConfirm()">Cancel</button>
-      <button class="modal-btn ok" onclick="confirmSave()">✅ Save</button>
-    </div>
-  </div>
-</div>
-
-<!-- Import modal -->
 <div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
     <div class="modal-title">📂 Import Configuration</div>
@@ -81,7 +48,6 @@
     </div>
   </div>
 </div>
-
 <div class="tabs">
   <div class="tab active"   onclick="gotoTab('ref',this)">📋 Reference Notes</div>
   <div class="tab"          onclick="gotoTab('compute',this)">🖥️ Compute Backup</div>
@@ -89,8 +55,6 @@
   <div class="tab"          onclick="gotoTab('growth',this)">📈 Monthly Growth</div>
   <div class="tab"          onclick="gotoTab('appdx',this)">📋 Appendix</div>
 </div>
-
-<!-- ======== REFERENCE ======== -->
 <div id="pg-ref" class="page active">
   <div class="steps">
     <div class="step"><div class="snum">1</div><div class="stitle">Input Workloads</div><div class="sdesc">ไปที่แท็บ <b>[🖥️ Compute Backup]</b> และ <b>[🗄️ Database Backup]</b> ใส่ Full Backup Size (GB), Compression %, Daily Change %, Annual Growth %, และ Retention ในแต่ละ Workload</div><div class="snote">⚠️ [Yellow Box] = User Input</div></div>
@@ -126,7 +90,6 @@
         <tr><th>Tier</th><th>Price</th><th>Notes</th></tr>
         <tr><td>Standard Tier</td><td>$0.0255/GB/mo</td><td>Active backups, frequent access</td></tr>
         <tr><td>Infrequent Tier</td><td>$0.0026/GB/mo</td><td>Long-term retention (&gt;31 days). 31-day minimum charge applies.
-          <!-- <span style="color:#ff6b6b;size:12px;"> &nbsp;<b><i>*OCI Native Backup, support use Storage Target: Standard Tier only! </i></b></span></td> -->
         </tr>
         <tr><td>Retrieval Fee</td><td>$0.0026/GB</td><td>Infrequent restore — data retrieval charge per GB</td></tr>
         <tr><td>Infrequent Min.</td><td>31 days</td><td>Deleted before 31 days → still charged for full 31-day period</td></tr>
