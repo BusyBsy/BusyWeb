@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCI Backup Storage Calculator</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/BusyBsy/Style-CSS@main/style.css">
+  <script src="https://cdn.jsdelivr.net/gh/BusyBsy/myJS@main/xlsx-style.js" defer></script>
+<style>
+  .wg-tier-wrap{display:flex;align-items:center;gap:6px;margin-left:4px;}
+  .wg-tier-label{font-size:11px;color:var(--muted);white-space:nowrap;}
+  .wg-tier-sel{background:var(--surface2);border:1px solid var(--border);border-radius:6px;
+    color:var(--fg);font-size:11px;padding:4px 8px;cursor:pointer;outline:none;
+    transition:border-color 0.15s;}
+  .wg-tier-sel:hover,.wg-tier-sel:focus{border-color:var(--accent2);}
+  .opt-infreqT{color: var(--infreqT);}
+  .opt-archT{color: var(--archT);}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="hlogo">☁️</div>
+  <div style="display: flex; flex-direction: column; gap: 4px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="htitle">OCI Backup Storage Calculator</div>
+      <div class="hbadge" style="margin-left:0;">v3.01</div>
+    </div>
+  <div class="hsub">Oracle Cloud Infrastructure | Object Storage Backup Sizing</div>
+</div>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+    <button class="hbtn" onclick="toggleImportMenu(event)" id="import-btn" title="Load previously saved configuration">
+      📂 Import
+    </button>
+    <button class="hbtn primary" onclick="exportJSON()" title="Export configuration as .json file">
+      📤 Export..
+    </button>
+    <button class="hbtn" onclick="exportExcel()" title="Export 60-month forecast as Excel (.xlsx)" style="background:linear-gradient(135deg,#1d6a3a,#27a85f);border-color:#27a85f;color:#fff;font-weight:600;">
+      📊 Export Excel
+    </button>
+  </div>
+</div>
+<div class="modal-overlay" id="import-modal" onclick="closeImportModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-title">📂 Import Configuration</div>
+    <div class="modal-sub">วางข้อมูล JSON ที่ Export ไว้ด้านล่าง แล้วกด Load<br><span style="color:#e74c3c;font-size:11px;">⚠️ ข้อมูลปัจจุบันจะถูกแทนที่ทั้งหมด</span></div>
+    <textarea class="modal-textarea" id="import-json-text" placeholder='{ "currency": "USD", "compute": [...], "db": [...] }'></textarea>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;" id="import-status"></div>
+    <div class="modal-row">
+      <button class="modal-btn" onclick="closeImportModal()">Cancel</button>
+      <button class="modal-btn" onclick="clearImportText()">🗑 Clear</button>
+      <button class="modal-btn ok" onclick="doImport()">✅ Load</button>
+    </div>
+  </div>
+</div>
+<div class="tabs">
+  <div class="tab active"   onclick="gotoTab('ref',this)">📋 Reference Notes</div>
+  <div class="tab"          onclick="gotoTab('compute',this)">🖥️ Compute Backup</div>
+  <div class="tab"          onclick="gotoTab('database',this)">🗄️ Database Backup</div>
+  <div class="tab"          onclick="gotoTab('growth',this)">📈 Monthly Growth</div>
+  <div class="tab"          onclick="gotoTab('appdx',this)">📋 Appendix</div>
+</div>
+<div id="pg-ref" class="page active">
+  <div class="steps">
+    <div class="step"><div class="snum">1</div><div class="stitle">Input Workloads</div><div class="sdesc">ไปที่แท็บ <b>[🖥️ Compute Backup]</b> และ <b>[🗄️ Database Backup]</b> ใส่ Full Backup Size (GB), Compression %, Daily Change %, Annual Growth %, และ Retention ในแต่ละ Workload</div><div class="snote">⚠️ [Yellow Box] = User Input</div></div>
+    <div class="step"><div class="snum">2</div><div class="stitle">Set Pricing</div><div class="sdesc">ไปที่แท็บ <b>[📈 Monthly Growth]</b> ปรับ Price ของ Object Storage Standard Tier, Infrequent/Archive Tier และเลือก USD หรือ THB</div></div>
+    <div class="step"><div class="snum">3</div><div class="stitle">Read Results</div><div class="sdesc">ที่แท็บ <b>[📈 Monthly Growth]</b> แสดง 12–60-month ramp-up, Standard vs Archive tier split, Cost, KPIs และ Chart ที่ Update อัตโนมัติ</div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd">📖 How Retention Works — สูตรการคำนวณ</div>
+    <div class="sec-bd">
+      <div class="info-box">
+        <div class="ihead">Retention Logic</div>
+        <ul style="padding-left:16px;line-height:1.9">
+          <li><b>DAILY:</b> Incremental copies = dailyRet × dailyChangeRate × effectiveFullSize</li>
+          <li><b>WEEKLY:</b> Full copies = weeklyRet × effectiveFullSize</li>
+          <li><b>MONTHLY:</b> Full copies = monthlyRet × effectiveFullSize (ramp-up month by month)</li>
+          <li><b>YEARLY:</b>  Full copies = Capped at yearlyRet (เพิ่มทุกสิ้นปี)</li>
+          <li><b>TOTAL</b> = Daily + Weekly + Monthly + Yearly</li>
+          <li><b>Standard Tier</b> = Total - ArchiveClassTier  |  <b>ArchiveClassTier</b> = Backups ที่เก่ากว่า Archive after months</li>
+        </ul>
+        <div style="font-family:'IBM Plex Mono',monospace;background:#0d1117;padding:8px 12px;border-radius:6px;font-size:11px;color:#58a6ff;margin-top:8px;">
+          Input: Compression % = 0–99 (e.g. 30 = 30%)<br>
+          Input: Daily Change % = 0–100 (e.g. 3 = 3% per day)<br><br>
+          compRatio = 1 ÷ (1 − Compression % / 100)<br>
+          effectiveSize = rawGB ÷ compRatio ÷ dedupRatio<br>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd">💰 OCI Object Storage Pricing (Asia Pacific)</div>
+    <div class="sec-bd">
+      <table class="ref-tbl">
+        <tr><th>Tier</th><th>Price</th><th>Notes</th></tr>
+        <tr><td>Standard Tier</td><td>$0.0255/GB/mo</td><td>Active backups, frequent access
+          <span style="color:#ff6b6b;size:12px;"> &nbsp;<b><i>*OCI Native Backup, support with Object Storage "Standard Tier" only! </i></b></span>
+        </td></tr>
+        <tr><td><span style="color:var(--infreqT);font-weight:600;">Infrequent Tier</span></td><td>$0.01/GB/mo</td>
+          <td>Data accessed infrequently but needs occasional retrieval. Lower cost than Standard, higher than Archive. Suitable for backups retrieved a few times per year.</td></tr>
+        <tr><td><span style="color:var(--archT);font-weight:600;">Archive Tier</span></td><td>$0.0026/GB/mo</td>
+          <td>Long-term retention (&gt;90 days). 90-day minimum charge applies.</td></tr>
+        <tr><td>Retrieval Fee(Infrequent tier Only)</td><td>$0.01/GB</td><td>For restore — data retrieval charge per GB</td></tr>
+        <tr><td>Infrequent Tier Min.</td><td>31 days</td><td>Deleted before 31 days → still charged for full 31-day period</td></tr>
+        <tr><td>Archive Tier Min.</td><td>90 days</td><td>Deleted before 90 days → still charged for full 90-day period</td></tr>
+        <tr><td>Replication</td><td>Same as source</td><td>Cross-region replication doubles storage cost</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd">🗜️ Compression & Dedup Reference</div>
+    <div class="sec-bd">
+      <table class="ref-tbl">
+        <tr><th>Backup Type</th><th>Typical Ratio</th><th>Notes</th></tr>
+        <tr><td>OCI Block Volume Backup</td><td>1.4x</td><td>OCI internal compression, typical 1.3x–1.5x</td></tr>
+        <tr><td>Oracle DB (RMAN Basic)</td><td>2x</td><td>1.8x–2x OLTP; High ~3x–4x (requires ACO license)</td></tr>
+        <tr><td>PostgreSQL (pgBackRest)</td><td>1.8x</td><td>gzip/lz4/zstd, WAL-level diff/incr, 1.5x–2.5x</td></tr>
+        <tr><td>MySQL Backup</td><td>1.5x</td><td>Built-in compression, 1.5x–2x</td></tr>
+        <tr><td>SQL Server Backup</td><td>1.8x</td><td>Native backup compression, 1.5x–2x</td></tr>
+        <tr><td>Dedup (OCI Native)</td><td>1.0x</td><td>OCI Object Storage has NO deduplication — always 1.0x</td></tr>
+        <tr><td>Dedup (3rd party)</td><td>&gt;1.0x</td><td>Veeam/Commvault/Cohesity/Zerto — source-side dedup before upload</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd">📝 Other Notes — OCI Database Backup Services</div>
+    <div class="sec-bd">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">OPEN-SOURCE DATABASE SERVICES</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-weight:700;color:var(--fg);">OCI Database with PostgreSQL</span>
+              <span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Fully managed</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Fully managed PostgreSQL — v14, 15, 16, 17</div>
+            <table class="ref-tbl">
+              <tr><th>Backup engine</th><th>Compression ratio (sizing)</th><th>Incremental %</th><th>License add-on?</th></tr>
+              <tr>
+                <td>OCI-managed service backup — algorithm not user-selectable; OCI controls internally (pgBackRest-style incremental)<br><br><span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;font-family:'IBM Plex Mono',monospace;">OCI managed (zstd/lz4 internally)</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">1.5x – 2.5x</span><br><span style="font-size:10px;color:var(--muted);">Binary physical backup; text-heavy DBs may reach 3x</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">5 – 15%</span><br><span style="font-size:10px;color:var(--muted);">First backup = full; all subsequent = incremental (max 35-day retention)</span></td>
+                <td><span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">None — included</span><br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block;">Open source engine; OCI service fee covers backup management</span></td>
+              </tr>
+            </table>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-weight:700;color:var(--fg);">MySQL HeatWave Service</span>
+              <span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Fully managed</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Fully managed MySQL — OLTP + Analytics + GenAI on OCI</div>
+            <table class="ref-tbl">
+              <tr><th>Backup engine</th><th>Compression ratio (sizing)</th><th>Incremental %</th><th>License add-on?</th></tr>
+              <tr>
+                <td>OCI-managed automatic backup — internally uses MySQL Enterprise Backup (MEB) with lz4 by default; not user-configurable<br><br><span style="background:var(--surface);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;font-family:'IBM Plex Mono',monospace;">lz4 (MEB default)</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">1.5x – 2x</span><br><span style="font-size:10px;color:var(--muted);">Physical (InnoDB pages); lz4 default</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">5 – 15%</span><br><span style="font-size:10px;color:var(--muted);">Depends on write workload; HeatWave analytics workloads = lower change rate</span></td>
+                <td><span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">None — included</span><br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block;">MEB Enterprise license included in MySQL HeatWave Service pricing</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">ORACLE DATABASE SERVICES</div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-weight:700;color:var(--fg);">Oracle Autonomous Database (ADB)</span>
+              <span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Fully managed</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">ATP · ADW · AJD — Serverless &amp; Dedicated</div>
+            <table class="ref-tbl">
+              <tr><th>Backup engine</th><th>Compression ratio (sizing)</th><th>Incremental %</th><th>ACO license needed?</th></tr>
+              <tr>
+                <td>Oracle Autonomous Recovery Service (ARS) — managed by Oracle, not user-configurable<br><span style="font-size:10px;color:var(--muted);">RMAN + ARS internal</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">2x – 4x</span><br><span style="font-size:10px;color:var(--muted);">vs actual used data</span></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">~5 – 10%</span><br><span style="font-size:10px;color:var(--muted);">ARS uses "virtual full" — no daily full backup needed</span></td>
+                <td><span style="background:#238636;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Included in ADB</span><br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block;">Backup storage cost included up to 60-day retention</span></td>
+              </tr>
+            </table>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-weight:700;color:var(--fg);">Oracle Base Database Service (BDS)</span>
+              <span style="background:#1f6feb;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Managed infrastructure</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">VM &amp; Bare Metal — EE / SE2 / EE-HP / EE-EP on OCI</div>
+            <table class="ref-tbl">
+              <tr><th>Backup engine</th><th>Compression ratio (sizing)</th><th>Incremental %</th><th>ACO license needed?</th></tr>
+              <tr>
+                <td>RMAN → OCI Object Storage or Autonomous Recovery Service</td>
+                <td>BASIC (free): <strong>1.8x – 2.5x</strong><br>MEDIUM (+ACO): <strong>2x – 3x</strong><br>HIGH (+ACO): <strong>3x – 4x</strong></td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">5 – 15%</span><br><span style="font-size:10px;color:var(--muted);">Depends on workload type (OLTP vs batch)</span></td>
+                <td><span style="background:#d29922;color:#000;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:700;">MEDIUM / HIGH only</span><br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block;">BASIC is free on all editions incl. SE2. OCI BDS allows BASIC without ACO.</span></td>
+              </tr>
+            </table>
+          </div>
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+              <span style="font-weight:700;color:var(--fg);">Oracle Exadata Database Service</span>
+              <span style="background:#1f6feb;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;">Managed infrastructure</span>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Dedicated Infrastructure · Exascale · Cloud@Customer</div>
+            <table class="ref-tbl">
+              <tr><th>Backup engine</th><th>Compression ratio (sizing)</th><th>Incremental %</th><th>ACO license needed?</th></tr>
+              <tr>
+                <td>RMAN → OCI Object Storage or ARS (Oracle MAA recommends LOW compression)</td>
+                <td>LOW (Oracle MAA rec.): <strong>1.5x – 2x</strong><br>HIGH: <strong>3x – 4x</strong> (heavy CPU)</td>
+                <td><span style="font-size:16px;font-weight:700;color:var(--fg);">3 – 10%</span><br><span style="font-size:10px;color:var(--muted);">Exadata Smart Scan reduces block change rate</span></td>
+                <td><span style="background:#da3633;color:#fff;font-size:10px;padding:2px 8px;border-radius:12px;font-weight:700;">For MEDIUM / HIGH</span><br><span style="font-size:10px;color:var(--muted);margin-top:4px;display:block;">Exadata includes EE-EP; ACO typically already licensed</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+      </div>
+	  <div style="display:grid;grid-template-columns:1fr ;place-content:center;gap:16px;">
+		<!-- Recommended Values -->
+          <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;">
+            <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.05em;margin-bottom:10px;">RECOMMENDED VALUES FOR PROPOSAL TOOL</div>
+            <div style="font-weight:600;color:var(--fg);margin-bottom:10px;">Default Compress Ratio to use per service (conservative / safe for sizing)</div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px;text-align:center;margin-bottom:12px;">
+              <div><div style="font-size:11px;color:var(--muted);">ADB</div><div style="font-size:20px;font-weight:700;color:var(--accent2);">2.5x</div><div style="font-size:10px;color:var(--muted);">Dedup = 1.0x</div></div>
+              <div><div style="font-size:11px;color:var(--muted);">BDS (BASIC)</div><div style="font-size:20px;font-weight:700;color:var(--accent2);">2.0x</div><div style="font-size:10px;color:var(--muted);">Dedup = 1.0x</div></div>
+              <div><div style="font-size:11px;color:var(--muted);">Exadata</div><div style="font-size:20px;font-weight:700;color:var(--accent2);">1.8x</div><div style="font-size:10px;color:var(--muted);">Dedup = 1.0x</div></div>
+              <div><div style="font-size:11px;color:var(--muted);">PostgreSQL</div><div style="font-size:20px;font-weight:700;color:var(--accent2);">1.8x</div><div style="font-size:10px;color:var(--muted);">Dedup = 1.0x</div></div>
+              <div><div style="font-size:11px;color:var(--muted);">MySQL HeatWave</div><div style="font-size:20px;font-weight:700;color:var(--accent2);">1.5x</div><div style="font-size:10px;color:var(--muted);">Dedup = 1.0x</div></div>
+            </div>
+            <div style="border-top:1px solid var(--border);padding-top:10px;">
+              <div style="font-weight:600;font-size:12px;margin-bottom:6px;">Key rules for OCI Managed Services:</div>
+              <div style="font-size:11px;color:var(--muted);line-height:1.7;">
+                (1) Dedup = 1.0x for all OCI native services — OCI Object Storage has no deduplication.<br>
+                (2) ADB backup storage cost is included in service pricing up to 60-day retention; no separate Object Storage charge.<br>
+                (3) OCI PostgreSQL and MySQL HeatWave: backup algorithm is OCI-controlled and not user-configurable.<br>
+                (4) BDS / Exadata: user can configure RMAN compression level — BASIC requires no additional license on OCI.<br>
+                (5) All ratios are vs actual used data (not provisioned/allocated disk size). Always ask customer for actual data usage, not disk size.
+              </div>
+            </div>
+          </div>
+	  </div>
+    </div>
+  </div>
+</div>
+<div id="pg-compute" class="page">
+  <div class="info-box">
+    <div class="ihead">🖥️ OCI Compute Instance Backup — Workload Input</div>
+    Workload Type: OCI Compute Instance (Block Volume Backup)  &nbsp; | &nbsp; Storage Target: OCI Object Storage<br>
+    <span style="color:var(--yellow)">⚠️ [Yellow Box] = User Input</span>
+    <span style="color:var(--text);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>|</b>&nbsp;&nbsp;</span> <span style="color:var(--red)"> 📌 <i>If using OCI Native Backup: Archive after (months) = 0</i></span>
+  </div>
+  <div id="compute-container"></div>
+  <button class="add-btn" onclick="addWG('compute')" style="width:100%;justify-content:center;margin-bottom:16px;">➕ Add Compute Workload Group</button>
+</div>
+<div id="pg-database" class="page">
+  <div class="info-box">
+    <div class="ihead">🗄️ Database Backup — Workload Input</div>
+    Workload Type: Database Services (PostgreSQL, Oracle DB, MySQL, MSSQL)  &nbsp; | &nbsp; Storage Target: OCI Object Storage<br>
+    <span style="color:var(--yellow)">⚠️ [Yellow Box] = User Input</span>
+    <span style="color:var(--text);">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>|</b>&nbsp;&nbsp;</span> <span style="color:var(--red)"> 📌 <i>If using OCI Native Backup: Archive after (months) = 0</i></span>
+  </div>
+  <div id="db-container"></div>
+  <button class="add-btn" onclick="addWG('db')" style="width:100%;justify-content:center;margin-bottom:16px;">➕ Add Database Workload Group</button>
+</div>
+<div id="pg-growth" class="page">
+  <!-- Pricing -->
+  <div class="sec">
+    <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
+      <span class="toggle-icon" style="font-size: 17px;">⚙️</span> Global Pricing & Currency
+    </div>
+    <div class="sec-bd">
+      <div class="price-row">
+        <div class="price-card"><label>💰 OCI Standard (GB/Mo)</label><input type="number" id="p-std" value="0.0255" step="0.0001" oninput="renderGrowth()"></div>
+        <div class="price-card"><label>💰 OCI Infrequent (GB/Mo)</label><input type="number" id="p-inf" value="0.01" step="0.0001" oninput="renderGrowth()"></div>
+        <div class="price-card"><label>💰 OCI Archive (GB/Mo)</label><input type="number" id="p-arc" value="0.0026" step="0.0001" oninput="renderGrowth()"></div>
+        <div class="price-card"><label>💱 *THB Rate (1 USD/THB)</label><input type="number" id="p-rate" value="35.0097" step="0.01" oninput="renderGrowth()"></div>
+        <div><label style="font-size:10px;color:var(--accent);display:block;margin-bottom:4px;text-align: center;">Currency</label>
+          <div class="cur-toggle">
+            <button class="cur-btn active" id="btn-usd" onclick="setCur('USD')">USD ($)</button>
+            <button class="cur-btn" id="btn-thb" onclick="setCur('THB')">THB (฿)</button>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--muted);display:flex;gap:20px;flex-wrap:wrap;">
+        <span>Effective Standard: <b id="std-eff" style="color:var(--accent);font-family:'IBM Plex Mono',monospace;"></b></span>
+        <span>Effective Infrequent: <b id="inf-eff" style="color:var(--infreqT);font-family:'IBM Plex Mono',monospace;"></b></span>
+        <span>Effective Archive: <b id="arc-eff" style="color:var(--archT);font-family:'IBM Plex Mono',monospace;"></b></span>
+        <span style="margin-left: auto;">  <label style="font-size:11px;"><i>*Specify <b>"THB(฿) Rate = 1"</b> to manually enter the THB cost.</i></label></span>
+      </div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
+      <span class="toggle-icon" style="font-size: 17px;">🔗</span> Auto-Linked Workloads (from Compute & Database tabs)
+    </div>
+    <div class="sec-bd"><div id="g-summary"></div></div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title" onclick="toggleSection(this)" style="cursor: pointer; user-select: none; color: cadetblue;">
+      <span class="toggle-icon" style="font-size: 18px;">📈</span>&nbsp;Monthly Storage Forecast (GB) — Standard vs Infreq/Archive Tier (60 months)
+    </div>
+    <canvas id="chart-storage"></canvas>
+  </div>
+  <div class="chart-box">
+    <div class="chart-title" onclick="toggleSection(this)" style="cursor: pointer; user-select: none; color:darksalmon;">
+      <span class="toggle-icon" style="font-size: 18px;">💰</span>&nbsp;Monthly Cost Forecast & Cumulative (60 months)
+    </div>
+    <canvas id="chart-cost"></canvas>
+  </div>
+  <div class="sec">
+    <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
+      <span class="toggle-icon" style="font-size: 18px;">📅</span>12-Month Backup Storage Forecast (Retention Ramp-up)
+    </div>
+    <div class="sec-bd" style="padding:0;">
+      <div class="fc-wrap" id="fc-12"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd collapsed" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
+      <span class="toggle-icon" style="font-size: 18px;">📅</span>Extended Forecast — 60-Month Backup Storage
+    </div>
+    <div class="sec-bd hidden-sec" style="padding:0;">
+      <div class="fc-wrap" id="fc-60"></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd" onclick="toggleSection(this)" style="cursor: pointer; user-select: none;">
+      <span class="toggle-icon" style="font-size: 17px;">💡</span> Key Planning KPIs ( Month 12 | Month 36 | Month 60 )
+    </div>
+    <div class="sec-bd"><div class="kpi-grid" id="g-kpis"></div></div>
+  </div>
+  <div class="sec">
+    <div class="sec-hd">🎯 Storage Optimization Indicators (Month 1–12)</div>
+    <div class="sec-bd"><div id="g-opt"></div></div>
+  </div>
+
+  <div class="warn-box">⚠️ <b>Archive Tier:</b> (1) 90-day minimum charge — early deletion billed for full period. (2) Retrieval requires restore job (not instant). (3) Set Archive threshold ≥ 3 months. &nbsp;|&nbsp; 🔵 <b>Infrequent Tier:</b> No 90-day minimum. Instant access. Suitable for backups accessed a few times per year.</div>
+</div>
+<div id="pg-appdx" class="page" style="text-align:center;" >
+  <span style="font-size:11px;color:var(--muted);">📎 Appendix Notes</span>
+</div>
+<footer>--This tool is provided for sizing storage & budgetary estimation purposes only--<br>OCI | Backup Storage Calculator v3.01(Trial version) </footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+var STATE = {
+  currency: 'USD',
+  compute: [
+    { id:'WG1', label:'🖥️ Compute Backup --WG1--', annualGrowth:0, arcTier:'infrequent', rows:[
+      {name:'VM.Standard.E5.Flex (Linux)',     size:100, daily:0,    dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:1, archiveAfter:0},
+      {name:'VM.Standard.E5.Flex (Windows)',   size:0,   daily:0,    dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:1, archiveAfter:0},
+      {name:'BM.Standard (Bare Metal)',        size:0,   daily:0,    dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:1, archiveAfter:0},
+      {name:'Custom Instance 1',               size:0,   daily:0,    dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:1, archiveAfter:0},
+      {name:'Custom Instance 2',               size:0,   daily:0,    dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:1, archiveAfter:0}
+    ]},
+    { id:'WG2', label:'🖥️ Compute Backup --WG2--', annualGrowth:0, arcTier:'infrequent', rows:[
+      {name:'Custom Instance 1', size:0,   daily:0,   dedup:1, compPct:0.3, dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:4, archiveAfter:0},
+      {name:'Custom Instance 2', size:0,   daily:0,   dedup:1, compPct:0.3, dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:4, archiveAfter:0},
+      {name:'Custom Instance 3', size:0,   daily:0,   dedup:1, compPct:0.3, dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:4, archiveAfter:0}
+    ]}
+  ],
+  db: [
+    { id:'DB-WG1', label:'🗄️ DB-WG1', annualGrowth:0, arcTier:'infrequent', rows:[
+      {name:'Oracle DB (Enterprise/Standard Edition)',     size:0,   daily:0.03,  dedup:1, compPct:0.3,  dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'PostgreSQL',                                  size:0,   daily:0.03,  dedup:1, compPct:0.3,  dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'MySQL (Community/Enterprise)',                size:0,   daily:0.03,  dedup:1, compPct:0.3,  dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'Microsoft SQL Server (Enterprise/Standard)',  size:0,   daily:0.03,  dedup:1, compPct:0.1,  dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'Microsoft SQL Server (Standard)',             size:0,   daily:0.03,  dedup:1, compPct:0.05, dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'Autonomous DB (ATP/ADW)',                     size:0,   daily:0.03,  dedup:1, compPct:0.05, dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0},
+      {name:'Custom DB 1',                                 size:0,   daily:0.03,  dedup:1, compPct:0,    dailyRet:7, weeklyRet:4, monthlyRet:12, yearlyRet:3, archiveAfter:0}
+    ]}
+  ]
+};
+function compRatio(cp){ return (cp>=1||cp<0)?1:(1/(1-cp)); }
+function effectiveFull(rows){
+  return rows.reduce(function(s,r){ return s + (r.size||0)/compRatio(r.compPct||0)/(r.dedup||1); },0);
+}
+function weightedAvgDaily(rows){
+  var tot=rows.reduce(function(s,r){return s+(r.size||0);},0);
+  if(!tot) return 0;
+  return rows.reduce(function(s,r){return s+(r.size||0)*(r.daily||0);},0)/tot;
+}
+function wgRetention(wg){
+  var r=wg.rows.find(function(x){return (x.size||0)>0;})||wg.rows[0];
+  var _aa=r.archiveAfter; return {dailyRet:r.dailyRet||0,weeklyRet:r.weeklyRet||0,monthlyRet:r.monthlyRet||0,yearlyRet:r.yearlyRet||0,archiveAfter:(_aa!=null&&!isNaN(_aa))?Math.max(0,_aa):1};
+}
+function grownFullAt(wg, m){
+  var fullGB = effectiveFull(wg.rows);
+  var ag = wg.annualGrowth || 0;
+  return fullGB * Math.pow(1 + ag, (m - 1) / 12);
+}
+function calcMonth(wg, m, monthlyStdAccum, monthlyArcAccum, yearlyAllAccum, yearlyArcAccum){
+  var gf  = grownFullAt(wg, m);
+  var ret = wgRetention(wg);
+  var avgDaily = weightedAvgDaily(wg.rows);
+  var daily      = ret.dailyRet * avgDaily * gf;
+  var weekly     = ret.weeklyRet * gf;
+  var monthlyAll = monthlyStdAccum + monthlyArcAccum;
+  var yearly     = yearlyAllAccum || 0;
+  var arcMonth = monthlyArcAccum;
+  var arcYear  = yearlyArcAccum || 0;
+  var standard = Math.max(0, daily + weekly + (monthlyAll - arcMonth) + (yearly - arcYear));
+  var total    = standard + arcMonth + arcYear;
+  var archive  = arcMonth + arcYear;
+  var standardBilling = standard;
+
+  return {daily:daily, weekly:weekly, monthly:monthlyAll, yearly:yearly,
+          total:total, standard:standard, archive:archive,
+          arcMonth:arcMonth, arcYear:arcYear, grownFull:gf,
+          standardBilling:standardBilling};
+}
+function getStdUSD(){ return parseFloat(document.getElementById('p-std').value)||0.0255; }
+function getArcUSD(){ return parseFloat(document.getElementById('p-arc').value)||0.0026; }
+function getInfUSD(){ var el=document.getElementById('p-inf'); return el?parseFloat(el.value)||0.01:0.01; }
+function infPrice(){ var u=getInfUSD(); return STATE.currency==='THB'?u*getRate():u; }
+function wgArcPrice(wg){ return (wg.arcTier==='infrequent') ? infPrice() : arcPrice(); }
+function getRate()  { return parseFloat(document.getElementById('p-rate').value)||35.0097; }
+function stdPrice(){ var u=getStdUSD(); return STATE.currency==='THB'?u*getRate():u; }
+function arcPrice(){ var u=getArcUSD(); return STATE.currency==='THB'?u*getRate():u; }
+function sym(){ return STATE.currency==='THB'?'฿':'$'; }
+function fmtC(v){ return sym()+v.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(v,d){ d=d||0; return v.toLocaleString('en',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+
+function setCur(c){
+  STATE.currency=c;
+  document.getElementById('btn-usd').classList.toggle('active',c==='USD');
+  document.getElementById('btn-thb').classList.toggle('active',c==='THB');
+  renderGrowth();
+}
+function renderContainer(type){
+  var list = type==='compute'?STATE.compute:STATE.db;
+  var cid  = type==='compute'?'compute-container':'db-container';
+  var el = document.getElementById(cid);
+  el.innerHTML='';
+  list.forEach(function(wg,wi){
+    el.appendChild(buildWGBlock(type,wi));
+  });
+}
+
+function buildWGBlock(type,wi){
+  var list = type==='compute'?STATE.compute:STATE.db;
+  var wg = list[wi];
+  var wrap = document.createElement('div');
+  wrap.className='wg-block';
+  wrap.id='wgblock-'+type+'-'+wi;
+  var hd = document.createElement('div');
+  hd.className='wg-hd';
+  hd.innerHTML=
+    '<span class="wg-title" contenteditable="true" spellcheck="false" '+
+      'title="Click to rename" '+
+      'onblur="renameWG(this,\''+type+'\','+wi+')" '+
+      'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">'+
+      wg.label+'</span>'+
+    '<div class="wg-meta">'+
+      '<label>Annual Growth:</label>'+ 
+      '<input type="number" class="cell-in" id="ag-inp-'+type+'-'+wi+'" value="'+Math.round((wg.annualGrowth||0)*100)+'" step="1" min="0" max="500" style="width:60px" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].annualGrowth=(parseFloat(this.value)||0)/100;updateAGLabel(\''+type+'\','+wi+');updateWGFooter(\''+type+'\','+wi+');renderGrowth();">'+
+      '<span style="color:var(--muted);font-size:12px;margin-left:0px;">% / year</span>'+
+      '<span id="ag-lbl-'+type+'-'+wi+'" style="color:var(--yellow);font-size:10px;font-style: italic;margin-left:0px;"></span>'+
+    '</div>'+
+    '<div class="wg-tier-wrap">'+
+      '<label class="wg-tier-label">Archive-class Tier:</label>'+
+      '<select class="wg-tier-sel" '+
+        'onchange="STATE[\''+type+'\']['+wi+'].arcTier=this.value;renderGrowth();">'+
+        '<option class="opt-infreqT" value="infrequent"'+(wg.arcTier==='infrequent'?' selected':'')+'>🔵 Infrequent Tier</option>'+
+        '<option class="opt-archT" value="archive"'+(wg.arcTier==='infrequent'?'':' selected')+'>🟣 Archive Tier</option>'+
+      '</select>'+
+    '</div>'+
+    '<button class="del-wg-btn" title="Delete Workload Group" '+
+      'onclick="deleteWG(\''+type+'\','+wi+')" '+
+      ((list.length<=1)?'disabled style="opacity:0.3;cursor:not-allowed;"':'')+
+    '>🗑 Delete Group</button>';
+  wrap.appendChild(hd);
+  var tw = document.createElement('div'); tw.className='tbl-wrap';
+  var tbl = document.createElement('table'); tbl.className='inp-tbl';
+  tbl.innerHTML=
+    '<thead><tr>'+
+    '<th style="text-align:left">Workload / Instance</th>'+
+    '<th>Full Backup<br>Size (GB)</th>'+
+    '<th>Daily Change<br>Rate (0–100%)</th>'+
+    '<th>Dedup Ratio<br>(1.0=OCI)</th>'+
+    '<th>Compression<br>(0–99%)</th>'+
+    '<th>Comp. Ratio<br>(auto)</th>'+
+    '<th>Daily Ret.<br>(copies)</th>'+
+    '<th>Weekly Ret.<br>(copies)</th>'+
+    '<th>Monthly Ret.<br>(copies)</th>'+
+    '<th>Yearly Ret.<br>(copies)</th>'+
+    '<th><span style="color:var(--red)">📌Archive after<br>(months)</span></th>'+
+    '<th>Eff. Size<br>(GB)</th>'+
+    '<th style="width:32px"></th>'+
+    '</tr></thead>'+
+    '<tbody id="wgtbody-'+type+'-'+wi+'"></tbody>';
+  tw.appendChild(tbl);
+  wrap.appendChild(tw);
+  var ft = document.createElement('div');
+  ft.className='wg-ft';
+  ft.id='wgft-'+type+'-'+wi;
+  wrap.appendChild(ft);
+  var btn = document.createElement('button');
+  btn.className='add-btn';
+  btn.innerHTML='➕ Add Instance Row';
+  btn.style.margin='6px 10px 8px';
+  btn.onclick=(function(t,w){ return function(){ addRow(t,w); }; })(type,wi);
+  wrap.appendChild(btn);
+  setTimeout(function(){ renderRows(type,wi); updateWGFooter(type,wi); updateAGLabel(type,wi); },0);
+  return wrap;
+}
+function renderRows(type,wi){
+  var list = type==='compute'?STATE.compute:STATE.db;
+  var wg = list[wi];
+  var tbody = document.getElementById('wgtbody-'+type+'-'+wi);
+  if(!tbody) return;
+  tbody.innerHTML='';
+  wg.rows.forEach(function(row,ri){
+    var cr = compRatio(row.compPct||0);
+    var eff = (row.size||0)/cr/(row.dedup||1);
+    var tr = document.createElement('tr');
+    tr.innerHTML=
+      '<td><input type="text" class="cell-in" style="width: 220px;" value="'+row.name+'" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].name=this.value;"></td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.size||0)+'" step="1" min="0" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].size=parseFloat(this.value)||0;renderRows(\''+type+'\','+wi+');renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+Math.round((row.daily||0)*100)+'" step="1" min="0" max="100" placeholder="e.g. 3" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].daily=(parseFloat(this.value)||0)/100;updateWGFooter(\''+type+'\','+wi+');renderGrowth();">'+
+        '<span style="font-size:9px;color:var(--muted);margin-left:2px;">%</span></td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.dedup||1)+'" step="0.1" min="1" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].dedup=parseFloat(this.value)||1;renderRows(\''+type+'\','+wi+');renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+Math.round((row.compPct||0)*100)+'" step="1" min="0" max="99" placeholder="e.g. 30" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].compPct=(parseFloat(this.value)||0)/100;renderRows(\''+type+'\','+wi+');renderGrowth();">'+
+        '<span style="font-size:9px;color:var(--muted);margin-left:2px;">%</span></td>'+
+      '<td class="calc-cell">'+cr.toFixed(4)+'x</td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.dailyRet||0)+'" step="1" min="0" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].dailyRet=parseInt(this.value)||0;renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.weeklyRet||0)+'" step="1" min="0" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].weeklyRet=parseInt(this.value)||0;renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.monthlyRet||0)+'" step="1" min="0" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].monthlyRet=parseInt(this.value)||0;renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+(row.yearlyRet||0)+'" step="1" min="0" '+
+        'oninput="STATE[\''+type+'\']['+wi+'].rows['+ri+'].yearlyRet=parseInt(this.value)||0;renderGrowth();"></td>'+
+      '<td><input type="number" class="cell-in" value="'+((row.archiveAfter!=null)?row.archiveAfter:1)+'" step="1" min="0" '+
+        'oninput="var _v=parseInt(this.value);STATE[\''+type+'\']['+wi+'].rows['+ri+'].archiveAfter=isNaN(_v)?0:Math.max(0,_v);renderGrowth();"></td>'+
+      '<td class="calc-cell">'+fmtN(eff,2)+'</td>'+
+      '<td style="text-align:center;padding:2px;">'+
+        '<button class="del-row-btn" title="Delete instance" '+
+          (wg.rows.length<=1?'disabled style="opacity:0.3;cursor:not-allowed;"':'')+
+          ' onclick="deleteRow(\''+type+'\','+wi+','+ri+')">🗑</button>'+
+      '</td>';
+    tbody.appendChild(tr);
+  });
+  updateWGFooter(type,wi);
+}
+function updateWGFooter(type,wi){
+  var list = type==='compute'?STATE.compute:STATE.db;
+  var wg=list[wi];
+  var ft=document.getElementById('wgft-'+type+'-'+wi);
+  if(!ft) return;
+  var ef=effectiveFull(wg.rows);
+  var wd=weightedAvgDaily(wg.rows);
+  var tot=wg.rows.reduce(function(s,r){return s+(r.size||0);},0);
+  ft.innerHTML=
+    '<div class="wg-ft-item">📦 Total Raw Full Backup: <b>'+fmtN(tot,0)+' GB</b></div>'+'|'+
+    '<div class="wg-ft-item">📐 Total Effective Single Full (post-compress): <b>'+fmtN(ef,2)+' GB</b></div>'+'|'+
+    '<div class="wg-ft-item">📊 Weighted Avg. Daily Change: <b>'+(wd*100).toFixed(2)+'%</b></div>';
+}
+function addRow(type,wi){
+  var list=type==='compute'?STATE.compute:STATE.db;
+  list[wi].rows.push({name:'Custom Instance',size:0,daily:0.1,dedup:1,compPct:0,dailyRet:7,weeklyRet:4,monthlyRet:12,yearlyRet:1,archiveAfter:0});
+  renderRows(type,wi);
+  renderGrowth();
+}
+function deleteRow(type,wi,ri){
+  var list=type==='compute'?STATE.compute:STATE.db;
+  if(list[wi].rows.length<=1) return;  // minimum 1 instance
+  list[wi].rows.splice(ri,1);
+  renderRows(type,wi);
+  renderGrowth();
+}
+function renameWG(el,type,wi){
+  var list=type==='compute'?STATE.compute:STATE.db;
+  var newName=(el.textContent||'').trim();
+  if(newName) list[wi].label=newName;
+  else el.textContent=list[wi].label;
+  renderGrowth();
+}
+function deleteWG(type,wi){
+  var list=type==='compute'?STATE.compute:STATE.db;
+  if(list.length<=1) return;  // minimum 1 workload group
+  list.splice(wi,1);
+  // Re-label remaining groups
+  var prefix=type==='compute'?'🖥️ Compute Backup --WG':'🗄️ DB-WG';
+  var idPfx=type==='compute'?'WG':'DB-WG';
+  list.forEach(function(wg,i){ wg.id=idPfx+(i+1); wg.label=prefix+(i+1)+'--'; });
+  renderContainer(type);
+  renderGrowth();
+}
+function addWG(type){
+  var list=type==='compute'?STATE.compute:STATE.db;
+  var n=list.length+1;
+  var prefix=type==='compute'?'🖥️ Compute Backup --WG':'🗄️ DB-WG';
+  var id=type==='compute'?'WG':'DB-WG';
+  list.push({id:id+n,label:prefix+n+'--',annualGrowth:0,arcTier:'archive',
+    rows:[{name:'Custom Instance 1',size:0,daily:0.1,dedup:1,compPct:0,dailyRet:7,weeklyRet:4,monthlyRet:12,yearlyRet:1,archiveAfter:6}]});
+  renderContainer(type);
+  renderGrowth();
+}
+function monthlyGrowthRate(ag){ return Math.pow(1+(ag||0), 1/12) - 1; }
+function monthlyGrowthLabel(ag){ return (monthlyGrowthRate(ag)*100).toFixed(4)+'%'; }
+
+function updateAGLabel(type, wi){
+  var list = type==='compute'?STATE.compute:STATE.db;
+  var ag = list[wi].annualGrowth||0;
+  var el = document.getElementById('ag-lbl-'+type+'-'+wi);
+  if(el) el.textContent = '(Monthly Growth = '+monthlyGrowthLabel(ag)+')';
+}
+var _charts={};
+function renderGrowth(){
+  var sp=stdPrice(), ap=arcPrice();
+  var allWGs = STATE.compute.concat(STATE.db);
+  document.getElementById('std-eff').textContent = sym()+(sp).toFixed(6)+'/GB/Mo';
+  document.getElementById('arc-eff').textContent = sym()+(ap).toFixed(6)+'/GB/Mo';
+  var ip=infPrice();
+  var infEl=document.getElementById('inf-eff');
+  if(infEl) infEl.textContent = sym()+(ip).toFixed(6)+'/GB/Mo';
+  var sumHtml='<table style="width:100%;border-collapse:collapse;font-size:12px;"><thead><tr>'+
+    '<th style="text-align:left;padding:5px 10px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Workload</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Eff. Full GB</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Avg Daily Change %</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Daily Ret</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Weekly Ret</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Monthly Ret</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Yearly Ret</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);"><span style="color:var(--red)">Archive After (mo)</span></th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Annual Growth</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Monthly Growth Rate</th>'+
+    '<th style="padding:5px 8px;background:#0d1117;color:var(--muted);border-bottom:1px solid var(--border);">Archive-class Tier</th>'+
+    '</tr></thead><tbody>';
+  allWGs.forEach(function(wg){
+    var ef=effectiveFull(wg.rows),wd=weightedAvgDaily(wg.rows),ret=wgRetention(wg);
+    sumHtml+='<tr>'+
+      '<td style="padding:5px 10px;color:var(--accent2);font-weight:600;">'+wg.label+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;">'+fmtN(ef,2)+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;color:var(--muted);">'+(wd*100).toFixed(2)+'%</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;">'+ret.dailyRet+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;">'+ret.weeklyRet+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;">'+ret.monthlyRet+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;">'+ret.yearlyRet+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;color:var(--archive);">'+ret.archiveAfter+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;color:var(--yellow);">'+Math.round((wg.annualGrowth||0)*100)+'%</td>'+
+      '<td style="padding:4px 8px;text-align:center;font-family:\'IBM Plex Mono\',monospace;color:var(--green);">'+monthlyGrowthLabel(wg.annualGrowth||0)+'</td>'+
+      '<td style="padding:4px 8px;text-align:center;">'+
+        (wg.arcTier==='infrequent'
+          ? '<span style="background:#1f4a7a;color:var(--infreqT);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;">🔵 Infrequent Tier</span>'
+          : '<span style="background:#3d1f7a;color:var(--archT);font-size:10px;padding:2px 8px;border-radius:10px;font-weight:600;">🟣 Archive Tier</span>')+
+      '</td>'+
+      '</tr>';
+  });
+  sumHtml+='</tbody></table>';
+  document.getElementById('g-summary').innerHTML=sumHtml;
+
+  var wgMonthlyStdAccum = [];  
+  var wgMonthlyArcAccum = [];  
+  var wgYearlyAllAccum  = [];  
+  var wgYearlyArcAccum  = [];  
+    allWGs.forEach(function(wg){
+    var ret = wgRetention(wg);
+    var aa  = ret.archiveAfter;
+    var mAll = [];  
+    var yWin = []; 
+    var monthlyStdArr=[], monthlyArcArr=[], yearlyAllArr=[], yearlyArcArr=[];
+    for(var m = 1; m <= 60; m++){
+      var gf = grownFullAt(wg, m);
+      mAll.push({m:m, gf:gf});
+      var mWin = mAll.filter(function(e){ return (m - e.m) < ret.monthlyRet; });
+      var mStd=0, mArc=0;
+      if(aa > 0){
+        mWin.forEach(function(e){
+          if((m - e.m) >= aa) mArc += e.gf;
+          else                mStd += e.gf;
+        });
+      } else {
+        mWin.forEach(function(e){ mStd += e.gf; });
+      }
+      monthlyStdArr.push(mStd);
+      monthlyArcArr.push(mArc);
+      if(m % 12 === 0){
+        yWin.push({m:m, gf:gf});
+        if(yWin.length > ret.yearlyRet) yWin.shift();
+      }
+      var yAll = yWin.reduce(function(s,e){ return s+e.gf; }, 0);
+      yearlyAllArr.push(yAll);
+      var yArc = 0;
+      if(aa > 0){
+        var lookbackIdx = m - aa - 1; 
+        yArc = (lookbackIdx >= 0) ? (yearlyAllArr[lookbackIdx] || 0) : 0;
+      }
+      yearlyArcArr.push(yArc);
+    }
+    wgMonthlyStdAccum.push(monthlyStdArr);
+    wgMonthlyArcAccum.push(monthlyArcArr);
+    wgYearlyAllAccum.push(yearlyAllArr);
+    wgYearlyArcAccum.push(yearlyArcArr);
+  });
+  var months60=[];
+  for(var m=1;m<=60;m++){
+    var grandTot=0,grandStd=0,grandArc=0,grandCost=0,grandArcMonth=0,grandArcYear=0;
+    var wgData=allWGs.map(function(wg,wi){
+      var d=calcMonth(wg, m,
+        wgMonthlyStdAccum[wi][m-1],
+        wgMonthlyArcAccum[wi][m-1],
+        wgYearlyAllAccum[wi][m-1],
+        wgYearlyArcAccum[wi][m-1]);
+      var wgAp=wgArcPrice(wg);  
+      var c=d.standardBilling*sp+d.archive*wgAp;
+      grandTot+=d.total; grandStd+=d.standard; grandArc+=d.archive; grandCost+=c;
+      grandArcMonth+=d.arcMonth; grandArcYear+=d.arcYear;
+      return Object.assign({},d,{cost:c,arcTier:wg.arcTier||'archive',wgAp:wgAp});
+    });
+    months60.push({m:m,grandTot:grandTot,grandStd:grandStd,grandArc:grandArc,grandCost:grandCost,
+                   grandArcMonth:grandArcMonth,grandArcYear:grandArcYear,wgData:wgData});
+  }
+  var m12=months60[11], m60=months60[59];
+  var tot12=months60.slice(0,12).reduce(function(s,d){return s+d.grandCost;},0);
+  var tot60=months60.reduce(function(s,d){return s+d.grandCost;},0);
+  var savings12=months60.slice(0,12).reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var growthRates=months60.slice(1,12).map(function(d,i){var prev=months60[i].grandTot; return prev>0?(d.grandTot-prev)/prev:0;});
+  var avgGrowth=growthRates.length?growthRates.reduce(function(a,b){return a+b;},0)/growthRates.length:0;
+  var m36=months60[35];
+  var tot36=months60.slice(0,36).reduce(function(s,d){return s+d.grandCost;},0);
+  var savings36=months60.slice(0,36).reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var savings60=months60.reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var growthRates36=months60.slice(1,36).map(function(d,i){var prev=months60[i].grandTot;return prev>0?(d.grandTot-prev)/prev:0;});
+  var avgGrowth36=growthRates36.length?growthRates36.reduce(function(a,b){return a+b;},0)/growthRates36.length:0;
+  var growthRates60=months60.slice(1,60).map(function(d,i){var prev=months60[i].grandTot;return prev>0?(d.grandTot-prev)/prev:0;});
+  var avgGrowth60=growthRates60.length?growthRates60.reduce(function(a,b){return a+b;},0)/growthRates60.length:0;
+  document.getElementById('g-kpis').innerHTML=
+    kpiCard('Month 12 - Total Storage','var(--text)',fmtN(m12.grandTot),'GB')+
+    kpiCard('Month 12 - Total Storage','var(--text)',(m12.grandTot/1024).toFixed(3),'TiB')+
+    kpiCard('Month 36 - Total Storage','var(--text2)',fmtN(m36.grandTot),'GB')+
+    kpiCard('Month 36 - Total Storage','var(--text2)',(m36.grandTot/1024).toFixed(3),'TiB')+
+    kpiCard('Month 60 - Total Storage','var(--text)',fmtN(m60.grandTot),'GB')+
+    kpiCard('Month 60 - Total Storage','var(--text)',(m60.grandTot/1024).toFixed(3),'TiB')+
+    kpiCard('12-Month Total Cost','var(--yellow)',fmtC(tot12),''+STATE.currency+'')+
+    kpiCard('36-Month Total Cost','var(--yellow)',fmtC(tot36),''+STATE.currency+'')+
+    kpiCard('60-Month Total Cost','var(--yellow)',fmtC(tot60),''+STATE.currency+'')+
+    kpiCard('Avg. MoM Growth (M1-12)','var(--muted)',(avgGrowth*100).toFixed(2),'%')+
+    kpiCard('Avg. MoM Growth (M1-36)','var(--muted)',(avgGrowth36*100).toFixed(2),'%')+
+    kpiCard('Avg. MoM Growth (M1-60)','var(--muted)',(avgGrowth60*100).toFixed(2),'%')+
+    kpiCard('Month 12 - Infreq/Archive Tier','var(--archive)',fmtN(m12.grandArc),'GB')+
+    kpiCard('Month 36 - Infreq/Archive Tier','var(--archive)',fmtN(m36.grandArc),'GB')+
+    kpiCard('Month 60 - Infreq/Archive Tier','var(--archive)',fmtN(m60.grandArc),'GB')+
+    kpiCard('Sum. 12-Mo Infreq/Archive Savings','var(--green)',fmtC(savings12),''+STATE.currency+'')+
+    kpiCard('Sum. 36-Mo Infreq/Archive Savings','var(--green)',fmtC(savings36),''+STATE.currency+'')+
+    kpiCard('Sum. 60-Mo Infreq/Archive Savings','var(--green)',fmtC(savings60),''+STATE.currency+'');
+  buildStorageChart(months60);
+  buildCostChart(months60);
+  buildFcTable('fc-12', months60.slice(0,12), allWGs, sp, ap);
+  buildFcTable('fc-60', months60, allWGs, sp, ap);
+  buildOptTable(months60.slice(0,12), allWGs);
+}
+
+function kpiCard(label,color,val,unit){
+  return '<div class="kpi-card"><div class="kl">'+label+'</div><div class="kv" style="color:'+color+'">'+val+'</div><div class="ku">'+unit+'</div></div>';
+}
+function buildStorageChart(data){
+  var ctx=document.getElementById('chart-storage');
+  if(_charts.storage){_charts.storage.destroy();}
+  _charts.storage=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:data.map(function(d){return 'M'+d.m;}),
+      datasets:[
+        {label:'Standard Tier (GB)',   data:data.map(function(d){return Math.round(d.grandStd);}),  backgroundColor:'#58a6ff88',borderColor:'#58a6ff',borderWidth:1,stack:'a'},
+        {label:'Infreq/Archive Month (GB)',   data:data.map(function(d){return Math.round(d.grandArcMonth);}),backgroundColor:'#bc8cff88',borderColor:'#bc8cff',borderWidth:1,stack:'a'},
+        {label:'Infreq/Archive Year (GB)',    data:data.map(function(d){return Math.round(d.grandArcYear);}), backgroundColor:'#FF8CCF88',borderColor:'#FF8CCF',borderWidth:1,stack:'a'}
+      ]
+    },
+    options:{responsive:true,
+      plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}},
+        annotation:{annotations:data.filter(function(d){return d.m%12===0;}).reduce(function(acc,d){
+          acc['yr'+d.m]={type:'line',xMin:'M'+d.m,xMax:'M'+d.m,borderColor:'#ffffff22',borderWidth:1,borderDash:[3,3]};
+          return acc;
+        },{})}},
+      scales:{
+        x:{stacked:true,ticks:{color:'#8b949e',font:{size:9},maxRotation:45},grid:{color:'#21262d'}},
+        y:{stacked:true,ticks:{color:'#8b949e',font:{size:10}},grid:{color:'#21262d'}}
+      }
+    }
+  });
+}
+function buildCostChart(data){
+  var ctx=document.getElementById('chart-cost');
+  if(_charts.cost){_charts.cost.destroy();}
+  var cum=0;
+  var cumData=data.map(function(d){cum+=d.grandCost;return cum;});
+  _charts.cost=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:data.map(function(d){return 'M'+d.m;}),
+      datasets:[
+        {label:'Monthly Cost ('+STATE.currency+')',data:data.map(function(d){return parseFloat(d.grandCost.toFixed(2));}),
+          borderColor:'#f0883e',backgroundColor:'#f0883e22',fill:true,tension:0.3,pointRadius:4,yAxisID:'y'},
+        {label:'Cumulative ('+STATE.currency+')',data:cumData.map(function(v){return parseFloat(v.toFixed(2));}),
+          borderColor:'#D24222',backgroundColor:'#EFAA9A22',fill:true,borderDash:[3,4],tension:0.3,pointRadius:3,yAxisID:'y1'}
+      ]
+    },
+    options:{responsive:true,plugins:{legend:{labels:{color:'#8b949e',font:{size:10}}}},
+      scales:{
+        x:{ticks:{color:'#8b949e',font:{size:10}},grid:{color:'#21262d'}},
+        y:{ticks:{color:'#f0883e',font:{size:10}},grid:{color:'#21262d'},title:{display:true,text:'Monthly ('+STATE.currency+')',color:'#f0883e',font:{size:11}}},
+        y1:{position:'right',ticks:{color:'#D24222',font:{size:10}},grid:{color:'transparent'},title:{display:true,text:'Cumulative ('+STATE.currency+')',color:'#D24222',font:{size:11}}}
+      }}
+  });
+}
+function tierLabel(wg){
+  return (wg.arcTier==='infrequent') ? 'Infrequent' : 'Archive';
+}
+function tierBadge(wg){
+  return wg.arcTier==='infrequent'
+    ? '&nbsp;<span style="background:#1f4a7a;color:var(--infreqT);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;">🔵 Infrequent Tier</span>'
+    : '&nbsp;<span style="background:#3d1f7a;color:var(--archT);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;">🟣 Archive Tier</span>';
+}
+function buildFcTable(containerId, data, allWGs, sp, ap){
+  var el=document.getElementById(containerId);
+  if(!el) return;
+  var COLS=data.length;
+  var html='<table class="fc-tbl"><thead>';
+  html+='<tr><th class="row-hd" style="color:var(--muted);font-size:11px;font-weight: bold;">On Year</th>';
+  data.forEach(function(d){ html+='<th style="color:var(--muted);font-size:10px;font-style: italic;">'+Math.ceil(d.m/12)+'</th>'; });
+  html+='</tr>';
+    html+='<tr><th style="font-size:11px;font-weight: bold;" class="row-hd" >Workload / Metric</th>';
+  data.forEach(function(d){ html+='<th style="color:var(--muted);font-size:11px;font-weight: bold;">M'+d.m+'</th>'; });
+  html+='</tr>';
+    html+='</thead><tbody>';
+  allWGs.forEach(function(wg, wi){
+  var groupId = 'wg-group-' + wi;
+  html+='<tr class="wg-sec" onclick="toggleWGFcRow(\''+groupId+'\', this)" style="cursor:pointer;">' +
+        '<td class="row-hd-wg" colspan="'+(COLS+1)+'">' +
+        '<span class="toggle-icon">➤</span>&nbsp;&nbsp;'+wg.label+
+        tierBadge(wg)+'</td>' +
+        '</tr>';
+   html+=fcRow('std-r hidden-row ' + groupId,  '   📐 Eff. Full Backup Size (GB)',data,function(d){return fmtN(d.wgData[wi].grownFull, 2);});
+  html+=fcRow('hidden-row ' + groupId,           '   &nbsp;&nbsp;   ├ Daily Incremental (GB)',   data,function(d){return fmtN(d.wgData[wi].daily, 2);});
+  html+=fcRow('std-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   ├ Weekly Full Copies (GB)',  data,function(d){return fmtN(d.wgData[wi].weekly, 2);});
+  html+=fcRow('hidden-row ' + groupId,           '   &nbsp;&nbsp;   ├ Monthly Full Copies (GB)', data,function(d){return fmtN(d.wgData[wi].monthly, 2);});
+  html+=fcRow('std-r2 hidden-row ' + groupId,    '   &nbsp;&nbsp;   └ Yearly Full Copies (GB)',  data,function(d){return fmtN(d.wgData[wi].yearly, 2);});
+  html+=fcRow('total-r hidden-row ' + groupId,'   📦 Total Backup Storage (GB)',data,function(d){return fmtN(d.wgData[wi].total, 2);});
+  html+=fcRow('std-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   ├ Standard Tier (GB)',       data,function(d){return fmtN(d.wgData[wi].standard, 2);});
+  html+=fcRow('arc-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   ├ '+tierLabel(wg)+' Tier (GB) --Month--', data,function(d){return fmtN(d.wgData[wi].arcMonth, 2);});
+  html+=fcRow('arc-r hidden-row ' + groupId,     '   &nbsp;&nbsp;   └ '+tierLabel(wg)+' Tier (GB) --Year--',  data,function(d){return fmtN(d.wgData[wi].arcYear, 2);});
+  html+=fcRow('cost-r hidden-row ' + groupId, '  💰 Monthly Cost ('+STATE.currency+')',data,function(d){return fmtC(d.wgData[wi].cost);});
+  });
+  html+='<tr class="grand-r"><td class="row-hd-blank"></td>';
+  data.forEach(function(d){html+='<td class="row-hd-blank"></td>';});
+  html+='</tr>';
+    html+='<tr class="grand-r"><td class="row-hd" style="color:var(--text2);font-size:12px;" title="= Standard + Archive --Month-- + Archive --Year--">🏆 Grand Total (GB)</td>';
+  data.forEach(function(d){html+='<td style="font-size:10px;color:var(--text2);">'+fmtN(d.grandTot, 2)+'</td>';});
+  html+='</tr>';
+  html+='<tr class="grand-r std-r"><td class="row-hd" style="font-weight:300;font-size:11px;color:var(--standard);">   &nbsp;&nbsp;   ├ Standard Tier Total (GB)</td>';
+  data.forEach(function(d){html+='<td style="color:var(--standard);font-weight:300;font-size:10px">'+fmtN(d.grandStd, 2)+'</td>';});
+  html+='</tr>';
+  html+='<tr class="grand-r arc-r" style="opacity:0.85"><td class="row-hd" style="color:var(--archive);font-weight:300;font-size:11px">  &nbsp;&nbsp;  ├ Infreq/Archive Tier Total (GB) <i>--Month--</i></td>';
+  data.forEach(function(d){html+='<td style="color:var(--archive);font-weight:300;font-size:11px">'+fmtN(d.grandArcMonth, 2)+'</td>';});
+  html+='</tr>';
+  html+='<tr class="grand-r arc-r" style="opacity:0.85"><td class="row-hd" style="color:var(--archive);font-weight:300;font-size:11px">   &nbsp;&nbsp;   └ Infreq/Archive Tier Total (GB) <i>--Year--</i></td>';
+  data.forEach(function(d){html+='<td style="color:var(--archive);font-weight:300;font-size:11px">'+fmtN(d.grandArcYear, 2)+'</td>';});
+  html+='</tr>';
+  html+='<tr class="gcost-r"><td class="row-hd">💰 Total Monthly Cost ('+STATE.currency+')</td>';
+  data.forEach(function(d){html+='<td>'+fmtC(d.grandCost)+'</td>';});
+  html+='</tr>';
+  var cum=0;
+  html+='<tr class="gcost-r" style="opacity:0.8;"><td class="row-hd" style="color:#D29A22;">📊 Cumulative Cost ('+STATE.currency+')</td>';
+  data.forEach(function(d){cum+=d.grandCost;html+='<td style="color:#D29A22;">'+fmtC(cum)+'</td>';});
+  html+='</tr>';
+  var tggSelect = 'target-row';
+  html+='<tr class="row-hd-tgg" onclick="toggleByClass(\''+tggSelect+'\', this)" style="cursor:pointer;">' +
+        '<td>' +
+        '<span class="toggle-icon">➤</span><i>&nbsp;---MoM Growth---</i></td>' +
+        '</tr>';
+  html+='<tr class="grey-r hidden-row '+tggSelect+'"><td class="row-hd">📈 MoM Storage Growth (GB)</td>';
+  data.forEach(function(d,i){html+='<td>'+(i>0?fmtN(d.grandTot-data[i-1].grandTot, 2):'–')+'</td>';});
+  html+='</tr>';
+  html+='<tr class="grey-r hidden-row '+tggSelect+'"><td class="row-hd">📈 MoM Growth Rate %</td>';
+  data.forEach(function(d,i){
+    if(i===0){html+='<td>–</td>';return;}
+    var prev=data[i-1].grandTot;
+    html+='<td>'+(prev>0?((d.grandTot-prev)/prev*100).toFixed(1)+'%':'–')+'</td>';
+  });
+  html+='</tr>';
+  html+='<tr class="grey-r"><td class="row-hd" style="color:var(--green)">💡 Archive Savings vs All-Std</td>';
+  data.forEach(function(d){
+    var sav=Math.max(0,d.grandTot*sp-d.grandCost);
+    html+='<td style="color:var(--green)">'+fmtC(sav)+'</td>';
+  });
+  html+='</tr>';
+
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+function fcRow(cls,label,data,fn){
+  var h='<tr class="'+cls+'"><td class="row-hd">'+label+'</td>';
+  data.forEach(function(d){h+='<td>'+fn(d)+'</td>';});
+  h+='</tr>';
+  return h;
+}
+function buildOptTable(data12,allWGs){
+  var el=document.getElementById('g-opt');
+  if(!el) return;
+  var TARGET=8000*allWGs.length;
+  var html='<table class="opt-tbl"><thead><tr>'+
+    '<th style="text-align:left">Metric</th>'+
+    data12.map(function(d){return '<th>M'+d.m+'</th>';}).join('')+
+    '</tr></thead><tbody>';
+  html+='<tr><td>⚠️ Grand Total vs Target ('+fmtN(TARGET,0)+' GB)</td>';
+  data12.forEach(function(d){
+    var ok=d.grandTot<=TARGET;
+    html+='<td><span class="'+(ok?'bok':'bwarn')+'">'+(ok?'✅ OK':'⚠️ Over')+'</span></td>';
+  });
+  html+='</tr>';
+  html+='<tr><td>📊 Utilization % vs Target</td>';
+  data12.forEach(function(d){html+='<td style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;">'+(d.grandTot/TARGET*100).toFixed(1)+'%</td>';});
+  html+='</tr>';
+  html+='<tr><td>⏱️ Archive ≥ 90-day Rule (archiveAfter ≥ 3)</td>';
+  data12.forEach(function(d,mi){
+    var warn=allWGs.some(function(wg,wi){
+      var ret=wgRetention(wg);
+      return ret.archiveAfter<3 && d.wgData[wi].archive>0;
+    });
+    html+='<td><span class="'+(warn?'bwarn':'bok')+'">'+(warn?'⚠️ Check':'✅ OK')+'</span></td>';
+  });
+  html+='</tr>';
+
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+function gotoTab(id,el){
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active');});
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  el.classList.add('active');
+  document.getElementById('pg-'+id).classList.add('active');
+  if(id==='growth') renderGrowth();
+}
+function toggleWGFcRow(groupId, element) {
+  element.classList.toggle('collapsed');
+   var rows = document.querySelectorAll('tr.' + groupId);
+
+  rows.forEach(function(row) {
+    if (row.style.display === 'table-row') {
+      row.style.display = 'none';
+    } else {
+      row.style.display = 'table-row';
+    }
+  });
+}
+function toggleByClass(tggSelect, element) {
+  element.classList.toggle('collapsed');
+  var rows = document.querySelectorAll('tr.' + tggSelect);
+  rows.forEach(function(row) {
+    row.classList.toggle('hidden-row');
+  });
+}
+function toggleSection(headerElement) {
+  headerElement.classList.toggle('collapsed');
+  var bodyElement = headerElement.nextElementSibling;
+  if (bodyElement) {
+    bodyElement.classList.toggle('hidden-sec');
+  }
+}
+(function init(){
+  renderContainer('compute');
+  renderContainer('db');
+  setTimeout(function(){
+    STATE.compute.forEach(function(wg,wi){ updateAGLabel('compute',wi); });
+    STATE.db.forEach(function(wg,wi){ updateAGLabel('db',wi); });
+    renderGrowth();
+  }, 250);
+})();
+function buildExportPayload(){
+  var now = new Date();
+  var pad = function(n){return n<10?'0'+n:n;};
+  var ts  = now.getFullYear()+'-'+pad(now.getMonth()+1)+'-'+pad(now.getDate())+
+            'T'+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  return {
+    _meta: {
+      tool    : 'OCI Backup Storage Calculator',
+      version : 'v2.0',
+      exported: ts
+    },
+    currency    : STATE.currency,
+    stdUSD      : (document.getElementById('p-std')  ? parseFloat(document.getElementById('p-std').value)  : 0.0255),
+    arcUSD      : (document.getElementById('p-arc')  ? parseFloat(document.getElementById('p-arc').value)  : 0.0026),
+    thbRate     : (document.getElementById('p-rate') ? parseFloat(document.getElementById('p-rate').value) : 35.0097),
+    compute     : JSON.parse(JSON.stringify(STATE.compute)),
+    db          : JSON.parse(JSON.stringify(STATE.db))
+  };
+}
+function exportExcel(){
+  if(typeof XLSX === 'undefined'){
+    alert('SheetJS library not loaded. Please check your internet connection and reload the page.');
+    return;
+  }
+  var sp = stdPrice(), ap = arcPrice(), ip = infPrice(), cur = STATE.currency;
+  var rateTHB = getRate(), stdUSD = getStdUSD(), arcUSD = getArcUSD();
+  var allWGs = STATE.compute.concat(STATE.db);
+  var wgMStd=[], wgMArc=[], wgYAll=[], wgYArc=[];
+  allWGs.forEach(function(wg){
+    var ret=wgRetention(wg), aa=ret.archiveAfter;
+    var mAll=[], yWin=[], mStdA=[], mArcA=[], yAllA=[], yArcA=[];
+    for(var m=1;m<=60;m++){
+      var gf=grownFullAt(wg,m);
+      mAll.push({m:m,gf:gf});
+      var mWin=mAll.filter(function(e){return(m-e.m)<ret.monthlyRet;});
+      var ms=0,ma=0;
+      if(aa>0){mWin.forEach(function(e){if((m-e.m)>=aa)ma+=e.gf;else ms+=e.gf;});}
+      else{mWin.forEach(function(e){ms+=e.gf;});}
+      mStdA.push(ms); mArcA.push(ma);
+      if(m%12===0){yWin.push({m:m,gf:gf});if(yWin.length>ret.yearlyRet)yWin.shift();}
+      var ya=yWin.reduce(function(s,e){return s+e.gf;},0); yAllA.push(ya);
+      var yr=0; if(aa>0){var li=m-aa-1;yr=(li>=0)?(yAllA[li]||0):0;} yArcA.push(yr);
+    }
+    wgMStd.push(mStdA); wgMArc.push(mArcA); wgYAll.push(yAllA); wgYArc.push(yArcA);
+  });
+  var months60=[];
+  for(var m=1;m<=60;m++){
+    var gT=0,gS=0,gA=0,gC=0,gAMo=0,gAYr=0;
+    var wd=allWGs.map(function(wg,wi){
+      var d=calcMonth(wg,m,wgMStd[wi][m-1],wgMArc[wi][m-1],wgYAll[wi][m-1],wgYArc[wi][m-1]);
+      var wAp=(wg.arcTier==='infrequent')?ip:ap;  
+      var c=d.standardBilling*sp+d.archive*wAp;
+      gT+=d.total; gS+=d.standard; gA+=d.archive; gC+=c;
+      gAMo+=d.arcMonth; gAYr+=d.arcYear;
+      return Object.assign({},d,{cost:c});
+    });
+    months60.push({m:m,grandTot:gT,grandStd:gS,grandArc:gA,grandCost:gC,
+                   grandArcMonth:gAMo,grandArcYear:gAYr,wgData:wd});
+  }
+  var wb = XLSX.utils.book_new();
+  var BORDER_THIN = {
+    top:   {style:'thin', color:{rgb:'BFBFBF'}},
+    bottom:{style:'thin', color:{rgb:'BFBFBF'}},
+    left:  {style:'thin', color:{rgb:'BFBFBF'}},
+    right: {style:'thin', color:{rgb:'BFBFBF'}}
+  };
+  var BORDER_MED_RIGHT = {
+    top:   {style:'thin',   color:{rgb:'BFBFBF'}},
+    bottom:{style:'thin',   color:{rgb:'BFBFBF'}},
+    left:  {style:'thin',   color:{rgb:'BFBFBF'}},
+    right: {style:'medium', color:{rgb:'1F3864'}}
+  };
+  var BORDER_MED_BOTTOM = {
+    top:   {style:'thin',   color:{rgb:'BFBFBF'}},
+    bottom:{style:'medium', color:{rgb:'1F3864'}},
+    left:  {style:'thin',   color:{rgb:'BFBFBF'}},
+    right: {style:'thin',   color:{rgb:'BFBFBF'}}
+  };
+  var BORDER_THICK = {
+    top:   {style:'medium', color:{rgb:'1F3864'}},
+    bottom:{style:'medium', color:{rgb:'1F3864'}},
+    left:  {style:'medium', color:{rgb:'1F3864'}},
+    right: {style:'medium', color:{rgb:'1F3864'}}
+  };
+  function mkS(fontOpts, fillRgb, alignOpts, numFmt, border){
+    var s = {};
+    if(fontOpts) s.font = fontOpts;
+    if(fillRgb)  s.fill = {patternType:'solid', fgColor:{rgb:fillRgb}, bgColor:{indexed:64}};
+    if(alignOpts)s.alignment = alignOpts;
+    if(numFmt)   s.numFmt = numFmt;
+    if(border)   s.border = border;
+    return s;
+  }
+  var AL_C  = {horizontal:'center', vertical:'center', wrapText:true};
+  var AL_L  = {horizontal:'left',   vertical:'center', wrapText:false};
+  var AL_R  = {horizontal:'right',  vertical:'center', wrapText:false};
+  var AL_CW = {horizontal:'center', vertical:'center', wrapText:true};
+  var WG_FILLS = ['1F3864','2E4A7A','1A5276','0D3349','34495E'];
+  var WG_COL_FILLS = ['EBF5FB','F0F4F8','EAF4EA','FFF8EC','F5EEF8'];
+  function sc(v,s){ return {v:v, t:(typeof v==='number'?'n':'s'), s:s||{}}; }
+  function nc(v,s){ return {v:(typeof v==='number'?v:parseFloat(v)||0), t:'n', s:s||{}}; }
+  var S1=[];
+  var TITLE_S = mkS({bold:true,sz:14,color:{rgb:'FFFFFF'}},'0E7C7B',{horizontal:'left',vertical:'center',wrapText:false});
+  var HDR_DARK = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_THIN);
+  var ASSUME_L = mkS({bold:true,sz:10,color:{rgb:'1F3864'}},'DEEAF1',AL_L,'@',BORDER_THIN);
+  var ASSUME_V = mkS({sz:10,color:{rgb:'0070C0'}},'FFFFFF',AL_R,'#,##0.000000',BORDER_THIN);
+  var ASSUME_V2= mkS({sz:10,color:{rgb:'0070C0'}},'FFFFFF',AL_R,'#,##0.00',BORDER_THIN);
+  var UNIT_S   = mkS({sz:9,color:{rgb:'777777'}},null,{horizontal:'center'});
+  var KPI_L    = mkS({bold:true,sz:10},'EBF3FB',AL_L,'@',BORDER_THIN);
+  function kpiN(clr){ return mkS({sz:10,color:{rgb:clr||'000000'}},'FFFFFF',AL_R,'#,##0.00',BORDER_THIN); }
+  S1.push([sc('OCI Backup Storage Calculator — Export Report',TITLE_S)]);
+  S1.push([sc('Generated: '+new Date().toLocaleString(),mkS({sz:9,color:{rgb:'888888'}}))]);
+  S1.push([]);
+  S1.push([sc('⚙️  Pricing Assumptions',mkS({bold:true,sz:11,color:{rgb:'1F3864'}},'DEEAF1',AL_L))]);
+  S1.push([sc('Parameter',HDR_DARK),sc('Value',HDR_DARK),sc('Unit',HDR_DARK)]);
+  S1.push([sc('Standard Tier Price',ASSUME_L),nc(stdUSD,ASSUME_V),sc('GB / Month',UNIT_S)]);
+  S1.push([sc('Archive Tier Price',ASSUME_L), nc(arcUSD,ASSUME_V),sc('GB / Month',UNIT_S)]);
+  S1.push([sc('THB Rate (1 USD =)',ASSUME_L),  nc(rateTHB,ASSUME_V2),sc('THB [THB→1 = UC Price]',UNIT_S)]);
+  S1.push([sc('Display Currency',ASSUME_L), sc(cur,mkS({sz:10,color:{rgb:'0070C0'}},'FFFFFF',AL_R,'@',BORDER_THIN)),sc('',{})]);
+  S1.push([sc('Eff. Standard Price',ASSUME_L),nc(sp,ASSUME_V),sc(cur+' / GB / Month',UNIT_S)]);
+  S1.push([sc('Eff. Archive Price',ASSUME_L), nc(ap,ASSUME_V),sc(cur+' / GB / Month',UNIT_S)]);
+  S1.push([]);
+  S1.push([sc('📋  Workload Groups',mkS({bold:true,sz:11,color:{rgb:'1F3864'}},'DEEAF1',AL_L))]);
+  S1.push([sc('Workload Group',HDR_DARK),sc('Eff. Full\nBackup (GB)',HDR_DARK),sc('Wtd. Avg\nDaily Change',HDR_DARK),sc('Daily Ret\n(days)',HDR_DARK),sc('Weekly Ret\n(copies)',HDR_DARK),sc('Monthly Ret\n(copies)',HDR_DARK),sc('Yearly Ret\n(copies)',HDR_DARK),sc('Archive After\n(months)',HDR_DARK),sc('Annual Growth',HDR_DARK),sc('Monthly\nGrowth Rate',HDR_DARK)]);
+  allWGs.forEach(function(wg){
+    var ef=effectiveFull(wg.rows),wd=weightedAvgDaily(wg.rows),ret=wgRetention(wg);
+    S1.push([
+      sc(wg.label,mkS({bold:true,sz:10},'EBF3FB',AL_L,'@',BORDER_THIN)),
+      nc(ef,mkS({sz:10},'FFFFFF',AL_R,'#,##0.00',BORDER_THIN)),
+      nc(wd,mkS({sz:10},'FFFFFF',AL_R,'0.00%',BORDER_THIN)),
+      nc(ret.dailyRet,mkS({sz:10},'FFFFFF',{horizontal:'center',vertical:'center'},'0',BORDER_THIN)),
+      nc(ret.weeklyRet,mkS({sz:10},'FFFFFF',{horizontal:'center',vertical:'center'},'0',BORDER_THIN)),
+      nc(ret.monthlyRet,mkS({sz:10},'FFFFFF',{horizontal:'center',vertical:'center'},'0',BORDER_THIN)),
+      nc(ret.yearlyRet,mkS({sz:10},'FFFFFF',{horizontal:'center',vertical:'center'},'0',BORDER_THIN)),
+      nc(ret.archiveAfter,mkS({sz:10,color:{rgb:'7B3F00'}},'FFFFFF',{horizontal:'center',vertical:'center'},'0',BORDER_THIN)),
+      nc(wg.annualGrowth||0,mkS({sz:10,color:{rgb:'996633'}},'FFFFFF',AL_R,'0.00%',BORDER_THIN)),
+      nc(monthlyGrowthRate(wg.annualGrowth||0),mkS({sz:10,color:{rgb:'1E6B2E'}},'FFFFFF',AL_R,'0.0000%',BORDER_THIN))
+    ]);
+  });
+  S1.push([]);
+  var m12d=months60[11],m36d=months60[35],m60d=months60[59];
+  var tot12=months60.slice(0,12).reduce(function(s,d){return s+d.grandCost;},0);
+  var tot36=months60.slice(0,36).reduce(function(s,d){return s+d.grandCost;},0);
+  var tot60=months60.reduce(function(s,d){return s+d.grandCost;},0);
+  var sav12=months60.slice(0,12).reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var sav36=months60.slice(0,36).reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var sav60=months60.reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  S1.push([sc('📊  Key Planning KPIs',mkS({bold:true,sz:11,color:{rgb:'1F3864'}},'DEEAF1',AL_L))]);
+  S1.push([sc('KPI Metric',HDR_DARK),sc('Month 12',HDR_DARK),sc('Month 36',HDR_DARK),sc('Month 60',HDR_DARK)]);
+  S1.push([sc('Total Backup Storage (GB)',KPI_L),nc(m12d.grandTot,kpiN()),nc(m36d.grandTot,kpiN()),nc(m60d.grandTot,kpiN())]);
+  S1.push([sc('  ├ Standard Tier (GB)',KPI_L),nc(m12d.grandStd,kpiN('1A5276')),nc(m36d.grandStd,kpiN('1A5276')),nc(m60d.grandStd,kpiN('1A5276'))]);
+  S1.push([sc('  └ Infreq/Archive Tier (GB)',KPI_L),nc(m12d.grandArc,kpiN('7B3F00')),nc(m36d.grandArc,kpiN('7B3F00')),nc(m60d.grandArc,kpiN('7B3F00'))]);
+  S1.push([sc('Monthly Cost @ Period-End ('+cur+')',KPI_L),nc(m12d.grandCost,kpiN('7B2C00')),nc(m36d.grandCost,kpiN('7B2C00')),nc(m60d.grandCost,kpiN('7B2C00'))]);
+  S1.push([sc('Cumulative Cost ('+cur+')',KPI_L),nc(tot12,kpiN('C55A11')),nc(tot36,kpiN('C55A11')),nc(tot60,kpiN('C55A11'))]);
+  S1.push([sc('Archive Savings vs All-Std ('+cur+')',KPI_L),nc(sav12,kpiN('1E6B2E')),nc(sav36,kpiN('1E6B2E')),nc(sav60,kpiN('1E6B2E'))]);
+  var ws1=XLSX.utils.aoa_to_sheet(S1);
+  ws1['!cols']=[{wch:36},{wch:18},{wch:18},{wch:16},{wch:16},{wch:16},{wch:16},{wch:16},{wch:14},{wch:16}];
+  ws1['!merges']=[{s:{r:0,c:0},e:{r:0,c:9}},{s:{r:1,c:0},e:{r:1,c:9}},{s:{r:3,c:0},e:{r:3,c:9}}];
+  ws1['!rows']=[{hpt:22},{hpt:14}];
+  XLSX.utils.book_append_sheet(wb,ws1,'📋 Summary');
+  var nWG = allWGs.length;
+  var COL_PER_WG = 12; // 10 data + 2 spacer
+  var COL_GRAND  = 2 + nWG * COL_PER_WG;
+  var TOTAL_COLS = COL_GRAND + 7;
+  function wgBannerStyle(wi){
+    return mkS({bold:true,sz:12,color:{rgb:'FFFFFF'}},WG_FILLS[wi%WG_FILLS.length],AL_CW,'@',BORDER_THICK);
+  }
+  var COL_HDR_MO  = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',BORDER_MED_BOTTOM);
+  var COL_HDR_YR  = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'2C3E50',AL_C,'@',BORDER_MED_BOTTOM);
+  function colHdrWG(wi){
+    return mkS({bold:true,sz:9,color:{rgb:'FFFFFF'}},WG_FILLS[wi%WG_FILLS.length],AL_CW,'@',BORDER_MED_BOTTOM);
+  }
+  var COL_HDR_GRD = mkS({bold:true,sz:9,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_MED_BOTTOM);
+  var MO_CELL  = mkS({bold:true,sz:10},'D6E4F0',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
+  var YR_CELL  = mkS({bold:true,sz:10},'BDD7EE',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
+  function wgDataStyle(wi, isTotal, isArc, isCost, isStd){
+    var fill = WG_COL_FILLS[wi%WG_COL_FILLS.length];
+    if(isTotal) fill = 'D5E8F4';
+    if(isCost)  fill = 'FCE4D6';
+    var fontClr = '000000';
+    if(isArc)   fontClr = '7B3F00';
+    if(isCost)  fontClr = '7B2C00';
+    if(isStd)   fontClr = '1A5276';
+    var bold = isTotal || isCost;
+    return mkS({bold:bold,sz:9,color:{rgb:fontClr}},fill,AL_R,'#,##0.00',BORDER_THIN);
+  }
+  var GRAND_TOT_S  = mkS({bold:true,sz:10},'BDD7EE',AL_R,'#,##0.00',BORDER_MED_RIGHT);
+  var GRAND_STD_S  = mkS({sz:9,color:{rgb:'1A5276'}},'EBF5FB',AL_R,'#,##0.00',BORDER_THIN);
+  var GRAND_ARC_S  = mkS({sz:9,color:{rgb:'7B3F00'}},'FFF3E0',AL_R,'#,##0.00',BORDER_THIN);
+  var GRAND_COST_S = mkS({bold:true,sz:10,color:{rgb:'7B2C00'}},'FCE4D6',AL_R,'#,##0.00',BORDER_MED_RIGHT);
+  var GRAND_CUM_S  = mkS({bold:true,sz:10,color:{rgb:'C55A11'}},'FDEBD0',AL_R,'#,##0.00',BORDER_MED_RIGHT);
+  var GRAND_SAV_S  = mkS({sz:9,color:{rgb:'1E6B2E'}},'E8F5E9',AL_R,'#,##0.00',BORDER_THIN);
+  var TOTAL_ROW_S  = mkS({bold:true,sz:10},'1F3864',AL_R,'#,##0.00',{top:{style:'medium',color:{rgb:'1F3864'}},bottom:{style:'medium',color:{rgb:'1F3864'}},left:{style:'thin',color:{rgb:'BFBFBF'}},right:{style:'thin',color:{rgb:'BFBFBF'}}});
+  var TOTAL_LBL_S  = mkS({bold:true,sz:11,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',{top:{style:'medium',color:{rgb:'1F3864'}},bottom:{style:'medium',color:{rgb:'1F3864'}},left:{style:'medium',color:{rgb:'1F3864'}},right:{style:'thin',color:{rgb:'BFBFBF'}}});
+  var SPACER_S     = mkS(null,'F0F0F0',null,null,{left:{style:'medium',color:{rgb:'1F3864'}},right:{style:'medium',color:{rgb:'1F3864'}}});
+  function emptyCell(fillRgb){
+    return {v:'',t:'s',s: fillRgb ? mkS(null,fillRgb) : {fill:{patternType:'solid',fgColor:{rgb:'FFFFFF'},bgColor:{indexed:64}}}};
+  }
+  function fullRow(base){
+    while(base.length < TOTAL_COLS) base.push(emptyCell());
+    return base;
+  }
+  var sheetData = [];
+  var titleRow = [sc('OCI Backup Storage — 60-Month Forecast ('+cur+')', mkS({bold:true,sz:14,color:{rgb:'FFFFFF'}},'0E7C7B',{horizontal:'left',vertical:'center',wrapText:false}))];
+  sheetData.push(fullRow(titleRow));
+  var bannerRow = [emptyCell('2C3E50'), emptyCell('2C3E50')];
+  allWGs.forEach(function(wg,wi){
+    bannerRow.push(sc(wg.label, wgBannerStyle(wi)));
+    // fill params
+    var ret = wgRetention(wg);
+    var ef  = effectiveFull(wg.rows);
+    var wd  = weightedAvgDaily(wg.rows);
+    var infoStr = 'Eff.Full: '+ef.toFixed(1)+' GB | Daily Chg: '+(wd*100).toFixed(1)+'% | Day: '+ret.dailyRet+' | Wk: '+ret.weeklyRet+' | Mo: '+ret.monthlyRet+' | Yr: '+ret.yearlyRet+' | ArcAfter: '+ret.archiveAfter+' mo';
+    for(var k=1;k<10;k++) bannerRow.push(sc(k===1?infoStr:'', mkS({sz:8,italic:true,color:{rgb:'CCDDEE'}},WG_FILLS[wi%WG_FILLS.length],{horizontal:'left',vertical:'center',wrapText:false},'@',BORDER_THICK)));
+    bannerRow.push(emptyCell('F0F0F0')); // spacer col
+    bannerRow.push(emptyCell('F0F0F0'));
+  });
+  bannerRow.push(sc('🏆 Grand Totals', mkS({bold:true,sz:12,color:{rgb:'FFFFFF'}},'1F3864',AL_C,'@',BORDER_THICK)));
+  for(var k=1;k<7;k++) bannerRow.push(emptyCell('1F3864'));
+  sheetData.push(fullRow(bannerRow));
+  var hdrRow = [sc('Month', COL_HDR_MO), sc('Year', COL_HDR_YR)];
+  var wgMetricHeaders = [
+    'Eff. Full\nBackup (GB)',
+    'Daily\nIncremental (GB)',
+    'Weekly Full\nCopies (GB)',
+    'Monthly Full\nCopies (GB)',
+    'Yearly Full\nCopies (GB)',
+    'Total Backup\nStorage (GB)',
+    'Standard\nTier (GB)',
+    'Infreq/Archive Tier\n(Monthly) (GB)',
+    'Infreq/Archive Tier\n(Yearly) (GB)',
+    'Monthly Cost\n('+cur+')'
+  ];
+  allWGs.forEach(function(wg,wi){
+    wgMetricHeaders.forEach(function(h){
+      hdrRow.push(sc(h, colHdrWG(wi)));
+    });
+    hdrRow.push(emptyCell('E8E8E8')); 
+    hdrRow.push(emptyCell('E8E8E8')); 
+  });
+  var grandHdrs = ['Grand Total\n(GB)','Standard\nTier (GB)','Archive Mo\n(GB)','Archive Yr\n(GB)','Monthly Cost\n('+cur+')','Cumulative\nCost ('+cur+')','Archive\nSavings ('+cur+')'];
+  grandHdrs.forEach(function(h){ hdrRow.push(sc(h, COL_HDR_GRD)); });
+  sheetData.push(fullRow(hdrRow));
+  var cumCost = 0;
+  months60.forEach(function(d, mi){
+    var isYearEnd = (d.m % 12 === 0);
+    var yearNum   = Math.ceil(d.m / 12);
+    var yrFill    = yearNum % 2 === 0 ? 'F0F6FC' : 'FFFFFF';
+    var moStyle = mkS({bold:true,sz:10},'D6E4F0',{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
+    var yrStyle = mkS({bold: isYearEnd,sz:10, color:{rgb: isYearEnd?'1F3864':'595959'}}, isYearEnd?'BDD7EE':yrFill,{horizontal:'center',vertical:'center'},'0',BORDER_THIN);
+    var row = [nc(d.m, moStyle), nc(yearNum, yrStyle)];
+    allWGs.forEach(function(wg,wi){
+      var wd = d.wgData[wi];
+      var wf = WG_COL_FILLS[wi%WG_COL_FILLS.length];
+      var rowFill = isYearEnd ? 'D5E8F4' : wf;
+      function wS(bold, clr, isTot, isArc2, isCost2, isStd2){
+        var f = isTot ? (isYearEnd?'C7DCF0':'D5E8F4') : (isCost2?(isYearEnd?'F5CBBB':'FCE4D6'):(isArc2?(isYearEnd?'F5E0CC':'FFF3E0'):rowFill));
+        return mkS({bold:bold,sz:9,color:{rgb:clr}},f,AL_R,'#,##0.00',BORDER_THIN);
+      }
+      row.push(nc(wd.grownFull,  wS(true,  '1F3864', true,  false, false, false)));
+      row.push(nc(wd.daily,      wS(false, '444444', false, false, false, false)));
+      row.push(nc(wd.weekly,     wS(false, '444444', false, false, false, false)));
+      row.push(nc(wd.monthly,    wS(false, '444444', false, false, false, false)));
+      row.push(nc(wd.yearly,     wS(false, '444444', false, false, false, false)));
+      row.push(nc(wd.total,      wS(true,  '000000', true,  false, false, false)));
+      row.push(nc(wd.standard,   wS(false, '1A5276', false, false, false, true)));
+      row.push(nc(wd.arcMonth,   wS(false, '7B3F00', false, true,  false, false)));
+      row.push(nc(wd.arcYear,    wS(false, '7B3F00', false, true,  false, false)));
+      row.push(nc(wd.cost,       wS(true,  '7B2C00', false, false, true,  false)));
+      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0')); 
+      row.push(emptyCell(isYearEnd?'E0E0E0':'F0F0F0'));
+    });
+    cumCost += d.grandCost;
+    var sav = Math.max(0, d.grandTot*sp - d.grandCost);
+    var grdFill = isYearEnd ? 'A9CCE3' : null;
+    function gS(base){ return grdFill ? Object.assign({}, base, {s: Object.assign({}, base.s||{}, {fill:{patternType:'solid',fgColor:{rgb:grdFill},bgColor:{indexed:64}}})}) : base; }
+    var gTotS  = grdFill ? mkS({bold:true,sz:10}         ,grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_TOT_S;
+    var gStdS  = grdFill ? mkS({sz:9,color:{rgb:'1A5276'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)     : GRAND_STD_S;
+    var gArcS  = grdFill ? mkS({sz:9,color:{rgb:'7B3F00'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)     : GRAND_ARC_S;
+    var gCstS  = grdFill ? mkS({bold:true,sz:10,color:{rgb:'7B2C00'}},grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_COST_S;
+    var gCumS  = grdFill ? mkS({bold:true,sz:10,color:{rgb:'C55A11'}},grdFill,AL_R,'#,##0.00',BORDER_MED_RIGHT) : GRAND_CUM_S;
+    var gSavS  = grdFill ? mkS({sz:9,color:{rgb:'1E6B2E'}},grdFill,AL_R,'#,##0.00',BORDER_THIN)    : GRAND_SAV_S;
+    row.push(nc(d.grandTot,     gTotS));
+    row.push(nc(d.grandStd,     gStdS));
+    row.push(nc(d.grandArcMonth,gArcS));
+    row.push(nc(d.grandArcYear, gArcS));
+    row.push(nc(d.grandCost,    gCstS));
+    row.push(nc(cumCost,        gCumS));
+    row.push(nc(sav,            gSavS));
+    sheetData.push(fullRow(row));
+  });
+  var totRow = [sc('60-Mo TOTAL', TOTAL_LBL_S), emptyCell('1F3864')];
+  allWGs.forEach(function(wg,wi){
+    var metrics = ['grownFull','daily','weekly','monthly','yearly','total','standard','arcMonth','arcYear','cost'];
+    metrics.forEach(function(k){
+      var sum = months60.reduce(function(s,d){return s+d.wgData[wi][k];},0);
+      totRow.push(nc(sum, mkS({bold:true,sz:9,color:{rgb:'FFFFFF'}},'1F3864',AL_R,'#,##0.00',{top:{style:'medium',color:{rgb:'FFFFFF'}},bottom:{style:'medium',color:{rgb:'FFFFFF'}},left:{style:'thin',color:{rgb:'4A6FA5'}},right:{style:'thin',color:{rgb:'4A6FA5'}}})));
+    });
+    totRow.push(emptyCell('1F3864'));
+    totRow.push(emptyCell('1F3864'));
+  });
+  var gSumTot=months60.reduce(function(s,d){return s+d.grandTot;},0);
+  var gSumStd=months60.reduce(function(s,d){return s+d.grandStd;},0);
+  var gSumAMo=months60.reduce(function(s,d){return s+d.grandArcMonth;},0);
+  var gSumAYr=months60.reduce(function(s,d){return s+d.grandArcYear;},0);
+  var gSumCst=months60.reduce(function(s,d){return s+d.grandCost;},0);
+  var gSumSav=months60.reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+  var totGrdS = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_R,'#,##0.00',{top:{style:'medium',color:{rgb:'FFFFFF'}},bottom:{style:'medium',color:{rgb:'FFFFFF'}},left:{style:'thin',color:{rgb:'4A6FA5'}},right:{style:'thin',color:{rgb:'4A6FA5'}}});
+  totRow.push(nc(gSumTot,totGrdS)); totRow.push(nc(gSumStd,totGrdS)); totRow.push(nc(gSumAMo,totGrdS));
+  totRow.push(nc(gSumAYr,totGrdS)); totRow.push(nc(gSumCst,totGrdS)); totRow.push(nc(gSumCst,totGrdS));
+  totRow.push(nc(gSumSav,totGrdS));
+  sheetData.push(fullRow(totRow));
+  var ws2 = XLSX.utils.aoa_to_sheet(sheetData);
+  var cols2 = [
+    {wch:7},   
+    {wch:6}    
+  ];
+  allWGs.forEach(function(){
+    cols2.push({wch:13}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:12}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:13}); 
+    cols2.push({wch:2});  
+    cols2.push({wch:2});  
+  });
+  cols2.push({wch:14}); 
+  cols2.push({wch:13}); 
+  cols2.push({wch:12}); 
+  cols2.push({wch:12}); 
+  cols2.push({wch:14}); 
+  cols2.push({wch:14});
+  cols2.push({wch:13});
+  ws2['!cols'] = cols2;
+  var rows2 = [{hpt:20},{hpt:36},{hpt:42}]; 
+  for(var m=0;m<60;m++) rows2.push({hpt:16});
+  rows2.push({hpt:22}); 
+  ws2['!rows'] = rows2;
+  var merges2 = [
+    {s:{r:0,c:0},e:{r:0,c:TOTAL_COLS-1}},       
+    {s:{r:1,c:0},e:{r:1,c:1}},                  
+    {s:{r:2,c:0},e:{r:2,c:0}},                   
+    {s:{r:2,c:1},e:{r:2,c:1}},                   
+  ];
+  allWGs.forEach(function(wg,wi){
+    var cb = 2 + wi * COL_PER_WG;
+    merges2.push({s:{r:1,c:cb},e:{r:1,c:cb+9}});
+  });
+  merges2.push({s:{r:1,c:COL_GRAND},e:{r:1,c:TOTAL_COLS-1}});
+  merges2.push({s:{r:63,c:0},e:{r:63,c:1}});
+  ws2['!merges'] = merges2;
+  ws2['!freeze'] = {xSplit:2, ySplit:3};
+  XLSX.utils.book_append_sheet(wb, ws2, '📊 60-Month Forecast');
+  var S3=[];
+  var AS_HDR = mkS({bold:true,sz:10,color:{rgb:'FFFFFF'}},'1F3864',AL_CW,'@',BORDER_MED_BOTTOM);
+  function asN(clr,fillRgb){ return mkS({sz:10,color:{rgb:clr||'000000'}},fillRgb||'FFFFFF',AL_R,'#,##0.00',BORDER_THIN); }
+  S3.push([sc('OCI Backup — Annual Summary ('+cur+')',mkS({bold:true,sz:14,color:{rgb:'FFFFFF'}},'0E7C7B',{horizontal:'left',vertical:'center',wrapText:false}))]);
+  S3.push([sc('Generated: '+new Date().toLocaleString(),mkS({sz:9,color:{rgb:'888888'}}))]);
+  S3.push([]);
+  S3.push([sc('Year',AS_HDR),sc('Months',AS_HDR),sc('Storage at\nYear-End (GB)',AS_HDR),sc('Standard\nTier (GB)',AS_HDR),sc('Archive\nTier (GB)',AS_HDR),sc('Monthly Cost\n@ Year-End ('+cur+')',AS_HDR),sc('Annual Cost\n('+cur+')',AS_HDR),sc('Cumulative\nCost ('+cur+')',AS_HDR),sc('Archive\nSavings ('+cur+')',AS_HDR)]);
+  var cumC3=0,totalAnn=0,totalSav3=0;
+  for(var y=1;y<=5;y++){
+    var sl=months60.slice((y-1)*12,y*12);
+    var lm=sl[sl.length-1];
+    var ann=sl.reduce(function(s,d){return s+d.grandCost;},0);
+    var sav3=sl.reduce(function(s,d){return s+Math.max(0,d.grandTot*sp-d.grandCost);},0);
+    cumC3+=ann; totalAnn+=ann; totalSav3+=sav3;
+    var f=y%2===0?'F2F8FD':'FFFFFF', fh=y%2===0?'D6E4F0':'EBF3FB';
+    S3.push([
+      sc('Year '+y,mkS({bold:true,sz:11},fh,{horizontal:'center',vertical:'center'},'@',BORDER_THIN)),
+      sc('M'+((y-1)*12+1)+' – M'+(y*12),mkS({sz:9,color:{rgb:'555555'}},f,{horizontal:'center',vertical:'center'},'@',BORDER_THIN)),
+      nc(lm.grandTot,asN(null,f)), nc(lm.grandStd,asN('1A5276',f)), nc(lm.grandArc,asN('7B3F00',f)),
+      nc(lm.grandCost,asN('7B2C00',f)), nc(ann,asN('C55A11',f)), nc(cumC3,asN('892600',f)), nc(sav3,asN('1E6B2E',f))
+    ]);
+  }
+  var TFS=mkS({bold:true,sz:11},'BDD7EE',AL_R,'#,##0.00',BORDER_THIN);
+  S3.push([
+    sc('TOTAL 60 Mo.',mkS({bold:true,sz:11},'BDD7EE',{horizontal:'center',vertical:'center'},'@',BORDER_THIN)),
+    sc('M1 – M60',mkS({sz:9},'BDD7EE',{horizontal:'center',vertical:'center'},'@',BORDER_THIN)),
+    {v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},{v:'',t:'s',s:TFS},
+    nc(totalAnn,TFS),nc(totalAnn,TFS),nc(totalSav3,mkS({bold:true,sz:11,color:{rgb:'1E6B2E'}},'BDD7EE',AL_R,'#,##0.00',BORDER_THIN))
+  ]);
+
+  var ws3=XLSX.utils.aoa_to_sheet(S3);
+  ws3['!cols']=[{wch:12},{wch:14},{wch:22},{wch:18},{wch:16},{wch:24},{wch:22},{wch:24},{wch:24}];
+  ws3['!rows']=[{hpt:20},{hpt:14},{hpt:6},{hpt:30}];
+  ws3['!merges']=[{s:{r:0,c:0},e:{r:0,c:8}}];
+  XLSX.utils.book_append_sheet(wb,ws3,'📅 Annual Summary');
+  var now3=new Date(),p3=function(n){return n<10?'0'+n:n;};
+  var dt3=now3.getFullYear()+''+p3(now3.getMonth()+1)+''+p3(now3.getDate())+'T'+p3(now3.getHours())+p3(now3.getMinutes())+p3(now3.getSeconds());
+  XLSX.writeFile(wb,'OCI_Backup_Calculator_'+dt3+'.xlsx');
+}
+async function exportJSON(){
+  var payload  = buildExportPayload();
+  var jsonStr  = JSON.stringify(payload, null, 2);
+  var blob     = new Blob([jsonStr], {type:'application/json'});
+  var now      = new Date();
+  var pad      = function(n){return n<10?'0'+n:n;};
+  var datePart = now.getFullYear()+''+pad(now.getMonth()+1)+''+pad(now.getDate());
+  var datetimePart  = now.getFullYear()+''+pad(now.getMonth()+1)+''+pad(now.getDate())+'T'+pad(now.getHours())+':'+pad(now.getMinutes())+':'+pad(now.getSeconds());
+  var suggestedName = 'OCI_Backup_Calculator_'+datetimePart+'.json';
+  if(window.showSaveFilePicker){
+    try{
+      var fh = await window.showSaveFilePicker({
+        suggestedName: suggestedName,
+        types:[{
+          description:'OCI Calculator Config (JSON)',
+          accept:{'application/json':['.json']}
+        }]
+      });
+      var writable = await fh.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      return;                
+    } catch(e){
+      if(e.name==='AbortError') return;  
+    }
+  }
+  var url = URL.createObjectURL(blob);
+  var a   = document.createElement('a');
+  a.href  = url;
+  a.download = suggestedName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, 200);
+}
+function closeImportModal(e){
+  if(e && e.target!==document.getElementById('import-modal')) return;
+  document.getElementById('import-modal').classList.remove('open');
+  document.getElementById('import-status').textContent='';
+}
+function clearImportText(){
+  document.getElementById('import-json-text').value='';
+  document.getElementById('import-status').textContent='';
+}
+function toggleImportMenu(e){
+  e.stopPropagation();
+  document.getElementById('import-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('import-json-text').focus();},100);
+}
+function doImport(){
+  var raw=document.getElementById('import-json-text').value.trim();
+  if(!raw){
+    document.getElementById('import-status').textContent='⚠️ กรุณาวาง JSON ก่อน';
+    return;
+  }
+  var parsed;
+  try{
+    parsed=JSON.parse(raw);
+  } catch(err){
+    document.getElementById('import-status').textContent='❌ JSON ไม่ถูกต้อง: '+err.message;
+    return;
+  }
+  if(!parsed.compute || !parsed.db){
+    document.getElementById('import-status').textContent='❌ ไฟล์ไม่ถูกต้อง — ต้องมี compute และ db';
+    return;
+  }
+  STATE.compute  = parsed.compute;
+  STATE.db       = parsed.db;
+  if(parsed.currency) STATE.currency = parsed.currency;
+  if(parsed.stdUSD  && document.getElementById('p-std'))  document.getElementById('p-std').value  = parsed.stdUSD;
+  if(parsed.arcUSD  && document.getElementById('p-arc'))  document.getElementById('p-arc').value  = parsed.arcUSD;
+  if(parsed.thbRate && document.getElementById('p-rate')) document.getElementById('p-rate').value = parsed.thbRate;
+  if(parsed.currency) setCur(parsed.currency);
+  renderContainer('compute');
+  renderContainer('db');
+  renderGrowth();
+  document.getElementById('import-modal').classList.remove('open');
+  document.getElementById('import-status').textContent='';
+  var tabs=document.querySelectorAll('.tab');
+  tabs.forEach(function(t){t.classList.remove('active');});
+  tabs[1] && tabs[1].classList.add('active');
+  gotoTab('compute', tabs[1]);
+}
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape') document.getElementById('import-modal').classList.remove('open');
+});
+var _savedFileHandle = null;
+function saveToFile(){
+  var hint = document.getElementById('save-confirm-hint');
+  if(hint){
+    if(_savedFileHandle){
+      hint.innerHTML = '✅ ไฟล์ที่เลือกไว้แล้ว: <strong>' + _savedFileHandle.name + '</strong><br>กด "บันทึก" เพื่อเขียนทับทันที';
+      hint.style.color = 'var(--green, #3fb950)';
+    } else {
+      hint.innerHTML = '⚠️ The next time in this window, <br>it will save immediately without requiring any selection.';
+      hint.style.color = '';
+    }
+  }
+  document.getElementById('save-confirm').classList.add('open');
+}
+function closeSaveConfirm(e){
+  if(e && e.target !== document.getElementById('save-confirm')) return;
+  document.getElementById('save-confirm').classList.remove('open');
+}
+async function confirmSave(){
+  document.getElementById('save-confirm').classList.remove('open');
+  var stdUSD  = document.getElementById('p-std')  ? parseFloat(document.getElementById('p-std').value)  : 0.0255;
+  var arcUSD  = document.getElementById('p-arc')  ? parseFloat(document.getElementById('p-arc').value)  : 0.0026;
+  var thbRate = document.getElementById('p-rate') ? parseFloat(document.getElementById('p-rate').value) : 35.0097;
+  var stateObj = {
+    currency : STATE.currency,
+    compute  : STATE.compute,
+    db       : STATE.db
+  };
+  var stateJSON = JSON.stringify(stateObj, null, 2);
+  var newStateBlock = 'var STATE = ' + stateJSON + ';';
+  var originalHtml;
+  try {
+    var resp = await fetch(window.location.href);
+    originalHtml = await resp.text();
+  } catch(e) {
+    originalHtml = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+  }
+  var patched = originalHtml.replace(
+    /var STATE\s*=\s*\{[\s\S]*?\}\s*;(?=\s*\/\/\s*={10,}|\s*\/\/\s*FORMULAS|\s*function)/,
+    newStateBlock
+  );
+  patched = patched
+    .replace(/(id="p-std"[^>]*value=")[^"]*(")/,  '$1'+stdUSD+'$2')
+    .replace(/(id="p-arc"[^>]*value=")[^"]*(")/,  '$1'+arcUSD+'$2')
+    .replace(/(id="p-rate"[^>]*value=")[^"]*(")/,  '$1'+thbRate+'$2');
+  if(patched === originalHtml && stateJSON.length > 50){
+    alert('⚠️ ไม่สามารถ patch ไฟล์ได้ กรุณาใช้ปุ่ม Export... แทน');
+    return;
+  }
+  var blob = new Blob([patched], {type:'text/html;charset=utf-8'});
+  function flashSaved(label){
+    var btn = document.getElementById('save-btn');
+    var orig = btn.innerHTML;
+    btn.innerHTML = label || '✅ Saved!';
+    btn.classList.add('saving');
+    setTimeout(function(){ btn.innerHTML=orig; btn.classList.remove('saving'); }, 2500);
+  }
+  if(window.showOpenFilePicker){
+    try{
+      if(!_savedFileHandle){
+        var handles = await window.showOpenFilePicker({
+          id: 'oci-calc-overwrite',
+          startIn: 'downloads',
+          types:[{
+            description: 'OCI Calculator HTML File',
+            accept: {'text/html': ['.html','.htm']}
+          }],
+          multiple: false
+        });
+        _savedFileHandle = handles[0];
+      }
+      var perm = await _savedFileHandle.queryPermission({mode:'readwrite'});
+      if(perm !== 'granted') perm = await _savedFileHandle.requestPermission({mode:'readwrite'});
+      if(perm !== 'granted'){
+        _savedFileHandle = null;
+        alert('⚠️ ไม่ได้รับอนุญาตให้เขียนไฟล์');
+        return;
+      }
+      var writable = await _savedFileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+      flashSaved('✅ Saved!');
+      return;
+    } catch(ex){
+      if(ex.name === 'AbortError'){ _savedFileHandle = null; return; }
+      _savedFileHandle = null;
+    }
+  }
+  var currentName = window.location.pathname.split('/').pop() || 'OCI_Backup_Storage_Calculator.html';
+  if(!currentName.match(/\.html?$/i)) currentName = 'OCI_Backup_Storage_Calculator.html';
+  var url = URL.createObjectURL(blob);
+  var a   = document.createElement('a');
+  a.href  = url;
+  a.download = currentName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(function(){
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    flashSaved('✅ Downloaded!');
+  }, 200);
+}
+document.addEventListener('keydown', function(e){
+  if(e.key==='Escape') closeSaveConfirm();
+});
+</script>
+</body>
+</html>
